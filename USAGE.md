@@ -2,11 +2,16 @@
 
 ## Quick Start
 
+### Local Installation
+
 Use the wrapper script to run the template customizer:
 
 ```bash
 # Show help
 ./customize --help
+
+# Show version information
+./customize version
 
 # Show supported file types
 ./customize info
@@ -24,6 +29,46 @@ Use the wrapper script to run the template customizer:
 ./customize process --project ./examples/test-project --yes
 ```
 
+### Docker Usage 🐳
+
+Run template-customizer via Docker without installing it locally:
+
+```bash
+# Build the Docker image first
+./scripts/docker-build.sh
+
+# Show help
+./scripts/docker-run.sh --help
+
+# Show version information
+./scripts/docker-run.sh version
+
+# Show supported file types
+./scripts/docker-run.sh info
+
+# Preview changes (dry run) using test-template
+./scripts/docker-run.sh process --dry-run
+
+# Apply changes with confirmation prompt
+./scripts/docker-run.sh process
+
+# Apply changes without confirmation (for CI/automation)
+./scripts/docker-run.sh process --yes
+
+# Use a different template directory
+TEMPLATE_DIR=/path/to/your/template ./scripts/docker-run.sh process --dry-run
+
+# With custom config file (must be in template directory)
+TEMPLATE_DIR=/path/to/your/template ./scripts/docker-run.sh process --config custom-config.yml --dry-run
+```
+
+**Docker Benefits:**
+- ✅ No local Python installation required
+- ✅ Consistent environment across different systems
+- ✅ Automatic config file detection
+- ✅ Interactive confirmation prompts work correctly
+- ✅ Easy CI/CD integration
+
 ## Current Status ✅
 
 **Phase 1 Complete** - Foundation & Project Setup is fully implemented and tested:
@@ -37,6 +82,7 @@ Use the wrapper script to run the template customizer:
 - ✅ **Validation** for parameters and templates
 - ✅ **🆕 Auto-config Detection** - Finds config files in project root automatically
 - ✅ **🆕 Batch Processing** - `--yes` flag for CI/automation workflows
+- ✅ **🆕 Version Management** - Semantic versioning with compatibility checking
 
 ## Example Output
 
@@ -128,6 +174,36 @@ Use the `--yes` flag to skip confirmation prompts, perfect for CI/CD pipelines:
 ```bash
 ./customize process --project ./my-template --yes
 # Applies changes immediately without asking "Apply these changes? [y/N]"
+```
+
+### 🏷️ Version Management
+The template customizer includes comprehensive version management features:
+
+```bash
+# Show detailed version information
+./customize version
+```
+
+**Version Features:**
+- **Semantic Versioning** - Follows semver.org specification (MAJOR.MINOR.PATCH)
+- **Version Compatibility Checking** - Warns when config files were created for different major versions
+- **Dynamic Versioning** - Version information is centralized in `__init__.py`
+- **Rich Version Display** - Shows version, environment, and dependencies
+
+**Configuration Version Compatibility:**
+You can specify version requirements in your configuration files:
+
+```yaml
+# config.yml
+customizer_version: "0.1.0"  # or tool_version, or version
+project:
+  name: "MyApp"
+```
+
+If there's a major version mismatch, you'll see a warning:
+```
+⚠️  Warning: Configuration was created for version 1.0.0 but you're using version 2.0.0. There may be compatibility issues.
+Continue anyway? [y/N]
 ```
 
 The foundation is solid and working perfectly! 🚀

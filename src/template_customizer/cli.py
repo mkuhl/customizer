@@ -1,199 +1,259 @@
 """Command line interface for template customizer."""
 
-import click
-from pathlib import Path
-from typing import List, Optional
 import sys
+from pathlib import Path
+from typing import Optional
 
+import click
 from rich.console import Console
-from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.panel import Panel
-from rich.text import Text
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
 
-from .core.scanner import FileScanner
+from . import __version__
 from .core.parser import CommentParser
 from .core.processor import ParameterLoader, TemplateProcessor
-from .core.writer import FileWriter, FileChange
+from .core.scanner import FileScanner
+from .core.writer import FileChange, FileWriter
 from .utils.file_types import FileTypeDetector
-from .utils.validation import ParameterValidator, TemplateValidator, ProjectValidator
+from .utils.validation import ParameterValidator, ProjectValidator
 
 # Initialize rich console for colored output
 console = Console()
 
 
 @click.group()
-@click.version_option(version="0.1.0", prog_name="template-customizer")
-def main():
+@click.version_option(version=__version__, prog_name="template-customizer")
+@click.option(
+    "--project",
+    "-p",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    default=None,
+    help="Path to project template directory (global option)",
+)
+@click.option(
+    "--config",
+    "-c",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Path to configuration file (global option)",
+)
+@click.pass_context
+def main(ctx, project, config):
     """Template Customizer - Process templates using comment-based markers.
-    
+
     A tool for customizing project templates while keeping them fully functional.
-    Uses comment markers like '# variable = {{ expression }}' to identify 
+    Uses comment markers like '# variable = {{ expression }}' to identify
     customization points in source code.
     """
-    pass
+    # Store global options in context
+    ctx.ensure_object(dict)
+    ctx.obj['project'] = project
+    ctx.obj['config'] = config
 
 
 @main.command()
 @click.option(
-    "--project", "-p",
+    "--project",
+    "-p",
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
-    required=True,
-    help="Path to project template directory"
+    required=False,
+    help="Path to project template directory (overrides global)",
 )
 @click.option(
-    "--config", "-c",
+    "--config",
+    "-c",
     type=click.Path(exists=True, file_okay=True, dir_okay=False, path_type=Path),
     required=False,
-    help="Path to configuration file (YAML or JSON). If not provided, looks for config files in project root."
+    help="Path to configuration file (overrides global)",
 )
 @click.option(
-    "--output", "-o",
+    "--output",
+    "-o",
     type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
-    help="Output directory (default: modify in place)"
+    help="Output directory (default: modify in place)",
 )
 @click.option(
-    "--include",
-    multiple=True,
-    help="File patterns to include (e.g., *.py, *.js)"
+    "--include", multiple=True, help="File patterns to include (e.g., *.py, *.js)"
+)
+@click.option("--exclude", multiple=True, help="Additional file patterns to exclude")
+@click.option(
+    "--dry-run", "-d", is_flag=True, help="Preview changes without modifying files"
 )
 @click.option(
-    "--exclude",
-    multiple=True,
-    help="Additional file patterns to exclude"
+    "--verbose", "-v", is_flag=True, help="Show detailed processing information"
 )
 @click.option(
-    "--dry-run", "-d",
+    "--yes",
+    "-y",
     is_flag=True,
-    help="Preview changes without modifying files"
+    help="Automatically apply changes without confirmation prompt",
 )
-@click.option(
-    "--verbose", "-v",
-    is_flag=True,
-    help="Show detailed processing information"
-)
-@click.option(
-    "--yes", "-y",
-    is_flag=True,
-    help="Automatically apply changes without confirmation prompt"
-)
+@click.pass_context
 def process(
-    project: Path,
+    ctx,
+    project: Optional[Path],
     config: Optional[Path],
     output: Optional[Path],
     include: tuple,
     exclude: tuple,
     dry_run: bool,
     verbose: bool,
-    yes: bool
+    yes: bool,
 ):
     """Process template markers in project files.
-    
+
     This command scans the project directory for files containing template
     markers in comments and replaces the following lines with rendered values
     from the configuration file.
-    
+
     Example:
         template-customizer process -p ./my-template -c ./config.yml --dry-run
     """
     try:
+        # Use global options if local ones aren't provided
+        if project is None:
+            project = ctx.obj.get('project')
+        if config is None:
+            config = ctx.obj.get('config')
+        
+        # Validate project is provided
+        if project is None:
+            console.print("[red]Error:[/red] Project directory not specified")
+            console.print("Use --project option globally or with process command")
+            sys.exit(1)
+            
         # Auto-detect config file if not provided
         if config is None:
             config = _find_config_file(project, verbose)
             if config is None:
-                console.print("[red]Error:[/red] No configuration file specified and none found in project root.")
-                console.print("Expected files: config.yml, config.yaml, template-config.yml, template-config.yaml, customizer-config.yml, customizer-config.yaml")
+                console.print(
+                    "[red]Error:[/red] No configuration file specified and "
+                    "none found in project root."
+                )
+                console.print(
+                    "Expected files: config.yml, config.yaml, "
+                    "template-config.yml, template-config.yaml, "
+                    "customizer-config.yml, customizer-config.yaml"
+                )
                 sys.exit(1)
-        
+
         # Initialize components
         validator = ProjectValidator()
         param_validator = ParameterValidator()
-        template_validator = TemplateValidator()
-        
+
         # Validate inputs
         if verbose:
             console.print("[blue]Validating inputs...[/blue]")
-        
+
         project_errors = validator.validate_project_path(project)
         config_errors = validator.validate_config_file(config)
-        
+
         if project_errors or config_errors:
             for error in project_errors + config_errors:
                 console.print(f"[red]Error:[/red] {error}")
             sys.exit(1)
-        
+
         # Load configuration
         if verbose:
             console.print(f"[blue]Loading configuration from {config}...[/blue]")
-        
+
         param_loader = ParameterLoader(config)
         try:
             parameters = param_loader.load()
         except Exception as e:
             console.print(f"[red]Error loading configuration:[/red] {e}")
             sys.exit(1)
-        
+
+        # Check version compatibility
+        try:
+            current_version, _ = get_version_info()
+            is_compatible, warning = VersionCompatibilityChecker.check_config_compatibility(
+                config, current_version
+            )
+            if not is_compatible and warning:
+                console.print(f"[yellow]Warning:[/yellow] {warning}")
+                if not yes and not click.confirm("Continue anyway?"):
+                    console.print("[yellow]Operation cancelled by user[/yellow]")
+                    sys.exit(1)
+        except Exception:
+            # If version checking fails, continue silently
+            pass
+
         # Validate parameters
         param_errors = param_validator.validate_parameters(parameters)
         if param_errors:
             for error in param_errors:
                 console.print(f"[red]Configuration error:[/red] {error}")
             sys.exit(1)
-        
+
         # Handle output directory
         if output:
             if not dry_run:
                 if output.exists() and any(output.iterdir()):
-                    if not yes and not click.confirm(f"Output directory {output} is not empty. Continue?"):
+                    if not yes and not click.confirm(
+                        f"Output directory {output} is not empty. Continue?"
+                    ):
                         console.print("[yellow]Operation cancelled by user[/yellow]")
                         sys.exit(1)
                 else:
                     output.mkdir(parents=True, exist_ok=True)
-        
+
         # Initialize processors
         scanner = FileScanner(
             project_path=project,
             include_patterns=list(include) if include else None,
-            exclude_patterns=list(exclude) if exclude else None
+            exclude_patterns=list(exclude) if exclude else None,
         )
-        
+
         parser = CommentParser()
         processor = TemplateProcessor(parameters)
         writer = FileWriter(backup_enabled=not dry_run)
         file_detector = FileTypeDetector()
-        
+
         # Show configuration summary
-        _show_processing_summary(project, config, parameters, dry_run, include, exclude, output)
-        
+        _show_processing_summary(
+            project, config, parameters, dry_run, include, exclude, output
+        )
+
         # Process files
         all_changes = []
         processed_files = 0
         skipped_files = 0
-        
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             console=console,
-            transient=True
+            transient=True,
         ) as progress:
             scan_task = progress.add_task("Scanning files...", total=None)
-            
+
             files_to_process = list(scanner.scan())
-            progress.update(scan_task, description=f"Found {len(files_to_process)} files to scan")
-            
-            process_task = progress.add_task("Processing files...", total=len(files_to_process))
-            
+            progress.update(
+                scan_task, description=f"Found {len(files_to_process)} files to scan"
+            )
+
+            process_task = progress.add_task(
+                "Processing files...", total=len(files_to_process)
+            )
+
             for file_path in files_to_process:
-                progress.update(process_task, description=f"Processing {file_path.name}")
-                
+                progress.update(
+                    process_task, description=f"Processing {file_path.name}"
+                )
+
                 # Check if file type is supported
                 if not file_detector.is_supported_file(file_path):
                     skipped_files += 1
                     if verbose:
-                        console.print(f"[yellow]Skipped:[/yellow] {file_path} (unsupported file type)")
+                        console.print(
+                            f"[yellow]Skipped:[/yellow] {file_path} "
+                            f"(unsupported file type)"
+                        )
                     progress.advance(process_task)
                     continue
-                
+
                 # Parse template markers
                 try:
                     markers = parser.parse_file(file_path)
@@ -201,27 +261,32 @@ def process(
                     console.print(f"[red]Error parsing {file_path}:[/red] {e}")
                     progress.advance(process_task)
                     continue
-                
+
                 if not markers:
                     skipped_files += 1
                     if verbose:
-                        console.print(f"[yellow]Skipped:[/yellow] {file_path} (no template markers)")
-                    
-                    # If output directory is specified, still copy the file even without markers
+                        console.print(
+                            f"[yellow]Skipped:[/yellow] {file_path} "
+                            f"(no template markers)"
+                        )
+
+                    # If output directory is specified, still copy the file
+                    # even without markers
                     if output and not dry_run:
                         rel_path = file_path.relative_to(project)
                         target_path = output / rel_path
                         target_path.parent.mkdir(parents=True, exist_ok=True)
                         import shutil
+
                         shutil.copy2(file_path, target_path)
-                    
+
                     progress.advance(process_task)
                     continue
-                
+
                 # Process markers
                 try:
                     markers_and_values = processor.process_markers(markers)
-                    
+
                     # Determine target file path
                     if output:
                         # Calculate relative path from project root
@@ -229,11 +294,12 @@ def process(
                         target_path = output / rel_path
                     else:
                         target_path = file_path
-                    
+
                     changes = writer.prepare_changes(file_path, markers_and_values)
-                    
+
                     if changes:
-                        # Update changes to use target path if output directory is specified
+                        # Update changes to use target path if output directory
+                        # is specified
                         if output:
                             changes = [
                                 FileChange(
@@ -241,25 +307,28 @@ def process(
                                     line_number=c.line_number,
                                     old_content=c.old_content,
                                     new_content=c.new_content,
-                                    marker=c.marker
+                                    marker=c.marker,
                                 )
                                 for c in changes
                             ]
-                        
+
                         all_changes.extend(changes)
                         processed_files += 1
-                        
+
                         if verbose:
-                            console.print(f"[green]Processed:[/green] {file_path} ({len(changes)} changes)")
-                    
+                            console.print(
+                                f"[green]Processed:[/green] {file_path} "
+                                f"({len(changes)} changes)"
+                            )
+
                 except Exception as e:
                     console.print(f"[red]Error processing {file_path}:[/red] {e}")
-                
+
                 progress.advance(process_task)
-        
+
         # Show results
         _show_results(all_changes, processed_files, skipped_files, dry_run, verbose)
-        
+
         # Apply changes if not dry run
         if not dry_run and all_changes:
             should_apply = yes or click.confirm("Apply these changes?")
@@ -270,10 +339,12 @@ def process(
                         SpinnerColumn(),
                         TextColumn("[progress.description]{task.description}"),
                         console=console,
-                        transient=True
+                        transient=True,
                     ) as progress:
-                        copy_task = progress.add_task("Copying files to output directory...", total=None)
-                        
+                        progress.add_task(
+                            "Copying files to output directory...", total=None
+                        )
+
                         # Get unique source files from changes
                         source_files = set()
                         for change in all_changes:
@@ -281,22 +352,23 @@ def process(
                             rel_path = change.file_path.relative_to(output)
                             source_file = project / rel_path
                             source_files.add(source_file)
-                        
+
                         # Copy files to output directory
                         for source_file in source_files:
                             rel_path = source_file.relative_to(project)
                             target_file = output / rel_path
-                            
+
                             # Create parent directories
                             target_file.parent.mkdir(parents=True, exist_ok=True)
-                            
+
                             # Copy file
                             import shutil
+
                             shutil.copy2(source_file, target_file)
-                            
+
                             if verbose:
                                 console.print(f"[blue]Copied:[/blue] {rel_path}")
-                
+
                 success = writer.apply_changes(all_changes, dry_run=False)
                 if success:
                     console.print("[green]✓ All changes applied successfully![/green]")
@@ -305,7 +377,7 @@ def process(
                     sys.exit(1)
             else:
                 console.print("[yellow]Changes cancelled by user[/yellow]")
-        
+
     except KeyboardInterrupt:
         console.print("\n[yellow]Operation cancelled by user[/yellow]")
         sys.exit(1)
@@ -313,55 +385,62 @@ def process(
         console.print(f"[red]Unexpected error:[/red] {e}")
         if verbose:
             import traceback
+
             console.print(traceback.format_exc())
         sys.exit(1)
 
 
 def _show_processing_summary(
-    project: Path, 
-    config: Path, 
-    parameters: dict, 
+    project: Path,
+    config: Path,
+    parameters: dict,
     dry_run: bool,
     include: tuple,
     exclude: tuple,
-    output: Optional[Path] = None
+    output: Optional[Path] = None,
 ):
     """Show processing configuration summary."""
-    
+
     panel_content = []
     panel_content.append(f"📁 Project: {project}")
     panel_content.append(f"⚙️  Config: {config}")
-    panel_content.append(f"🏃 Mode: {'Dry Run (preview)' if dry_run else 'Live (will modify files)'}")
-    
+    panel_content.append(
+        f"🏃 Mode: {'Dry Run (preview)' if dry_run else 'Live (will modify files)'}"
+    )
+
     if output:
         panel_content.append(f"📂 Output: {output}")
-    
+
     if include:
         panel_content.append(f"📋 Include: {', '.join(include)}")
-    
+
     if exclude:
         panel_content.append(f"🚫 Exclude: {', '.join(exclude)}")
-    
+
     panel_content.append(f"📊 Parameters: {len(parameters)} top-level keys")
-    
-    console.print(Panel(
-        "\n".join(panel_content),
-        title="🔧 Template Customizer",
-        border_style="blue"
-    ))
+
+    console.print(
+        Panel(
+            "\n".join(panel_content),
+            title="🔧 Template Customizer",
+            border_style="blue",
+        )
+    )
 
 
 def _show_results(changes, processed_files, skipped_files, dry_run, verbose):
     """Show processing results."""
-    
+
     if not changes:
         console.print("\n[yellow]No changes to apply[/yellow]")
         return
-    
+
     # Summary
-    console.print(f"\n[green]✓ Found {len(changes)} changes in {processed_files} files[/green]")
+    console.print(
+        f"\n[green]✓ Found {len(changes)} changes in {processed_files} files[/green]"
+    )
     console.print(f"[blue]ℹ Skipped {skipped_files} files[/blue]")
-    
+
     if verbose or dry_run:
         # Show detailed changes
         table = Table(title="Changes to Apply" if not dry_run else "Changes Preview")
@@ -370,81 +449,186 @@ def _show_results(changes, processed_files, skipped_files, dry_run, verbose):
         table.add_column("Variable", style="green")
         table.add_column("Old Value", style="red")
         table.add_column("New Value", style="green")
-        
+
         for change in changes[:20]:  # Limit to first 20 for readability
             table.add_row(
                 str(change.file_path.name),
                 str(change.line_number + 1),  # 1-based line numbers for display
                 change.marker.variable_name,
-                change.old_content[:40] + "..." if len(change.old_content) > 40 else change.old_content,
-                change.new_content[:40] + "..." if len(change.new_content) > 40 else change.new_content
+                (
+                    change.old_content[:40] + "..."
+                    if len(change.old_content) > 40
+                    else change.old_content
+                ),
+                (
+                    change.new_content[:40] + "..."
+                    if len(change.new_content) > 40
+                    else change.new_content
+                ),
             )
-        
+
         console.print(table)
-        
+
         if len(changes) > 20:
             console.print(f"[blue]... and {len(changes) - 20} more changes[/blue]")
 
 
 @main.command()
-def info():
+@click.pass_context
+def info(ctx):
     """Show information about supported file types and syntax."""
+
+    # Display version information
+    console.print(f"[blue]Template Customizer v{__version__}[/blue]")
+    console.print()
     
+    # Display global options if set
+    project = ctx.obj.get('project')
+    config = ctx.obj.get('config')
+    
+    if project or config:
+        console.print("[bold]Global Options:[/bold]")
+        if project:
+            console.print(f"  Project directory: {project}")
+        if config:
+            console.print(f"  Configuration file: {config}")
+        console.print()
+
     detector = FileTypeDetector()
-    
-    console.print(Panel(
-        "Template Customizer supports comment-based template markers in various file types.",
-        title="📋 Supported File Types",
-        border_style="green"
-    ))
-    
+
+    console.print(
+        Panel(
+            "Template Customizer supports comment-based template markers in "
+            "various file types.",
+            title="📋 Supported File Types",
+            border_style="green",
+        )
+    )
+
     # Group extensions by comment type
     comment_types = {}
     for ext, comment_type in detector.EXTENSION_MAP.items():
         if comment_type not in comment_types:
             comment_types[comment_type] = []
         comment_types[comment_type].append(ext)
-    
+
     for comment_type, extensions in comment_types.items():
         syntax_info = detector.get_comment_syntax_info(comment_type)
-        
-        console.print(f"\n[bold blue]{syntax_info.get('description', comment_type)}[/bold blue]")
+
+        console.print(
+            f"\n[bold blue]{syntax_info.get('description', comment_type)}[/bold blue]"
+        )
         console.print(f"[green]Syntax:[/green] {syntax_info.get('example', 'N/A')}")
         console.print(f"[cyan]Extensions:[/cyan] {', '.join(sorted(extensions))}")
 
 
+@main.command()
+def version():
+    """Show detailed version information."""
+    try:
+        version_string, version_obj = get_version_info()
+        
+        console.print(
+            Panel(
+                f"[bold green]Template Customizer[/bold green]\n"
+                f"[blue]Version:[/blue] {version_string}\n"
+                f"[blue]Major:[/blue] {version_obj.major}\n"
+                f"[blue]Minor:[/blue] {version_obj.minor}\n"
+                f"[blue]Patch:[/blue] {version_obj.patch}" +
+                (f"\n[blue]Prerelease:[/blue] {version_obj.prerelease}" if version_obj.prerelease else "") +
+                (f"\n[blue]Build:[/blue] {version_obj.build}" if version_obj.build else ""),
+                title="🏷️ Version Information",
+                border_style="green",
+            )
+        )
+        
+        # Show Python and dependencies info
+        import sys
+        import platform
+        
+        console.print(
+            Panel(
+                f"[blue]Python:[/blue] {sys.version.split()[0]} ({platform.python_implementation()})\n"
+                f"[blue]Platform:[/blue] {platform.platform()}\n"
+                f"[blue]Architecture:[/blue] {platform.machine()}",
+                title="🐍 Environment",
+                border_style="blue",
+            )
+        )
+        
+        # Show core dependencies
+        deps_info = []
+        try:
+            import jinja2
+            deps_info.append(f"[blue]Jinja2:[/blue] {jinja2.__version__}")
+        except ImportError:
+            deps_info.append("[red]Jinja2:[/red] Not installed")
+        
+        try:
+            import yaml
+            deps_info.append(f"[blue]PyYAML:[/blue] {yaml.__version__}")
+        except ImportError:
+            deps_info.append("[red]PyYAML:[/red] Not installed")
+        
+        try:
+            import click
+            deps_info.append(f"[blue]Click:[/blue] {click.__version__}")
+        except ImportError:
+            deps_info.append("[red]Click:[/red] Not installed")
+        
+        try:
+            import rich
+            deps_info.append(f"[blue]Rich:[/blue] {rich.__version__}")
+        except ImportError:
+            deps_info.append("[red]Rich:[/red] Not installed")
+        
+        if deps_info:
+            console.print(
+                Panel(
+                    "\n".join(deps_info),
+                    title="📦 Dependencies",
+                    border_style="cyan",
+                )
+            )
+            
+    except Exception as e:
+        console.print(f"[red]Error getting version information:[/red] {e}")
+
+
 def _find_config_file(project_path: Path, verbose: bool = False) -> Optional[Path]:
     """Find configuration file in project root directory.
-    
+
     Args:
         project_path: Path to project directory
         verbose: Whether to show verbose output
-        
+
     Returns:
         Path to config file if found, None otherwise
     """
     # Common config file names to look for
     config_names = [
         "config.yml",
-        "config.yaml", 
+        "config.yaml",
         "template-config.yml",
         "template-config.yaml",
         "customizer-config.yml",
         "customizer-config.yaml",
         "config.json",
         "template-config.json",
-        "customizer-config.json"
+        "customizer-config.json",
     ]
-    
+
     for config_name in config_names:
         config_path = project_path / config_name
         if config_path.exists() and config_path.is_file():
             if verbose:
-                console.print(f"[blue]INFO:[/blue] Found configuration file: {config_path}")
+                console.print(
+                    f"[blue]INFO:[/blue] Found configuration file: {config_path}"
+                )
             else:
                 console.print(f"[blue]ℹ Using config file:[/blue] {config_path.name}")
             return config_path
-    
+
     return None
 
 

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "template-customizer"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A tool for customizing project templates using comment-based markers"
 readme = "README.md"
 license = "MIT"
@@ -65,6 +65,8 @@ include = '\.pyi?$'
 [tool.ruff]
 target-version = "py38"
 line-length = 88
+
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -76,7 +78,7 @@ select = [
 ]
 ignore = []
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501"]
 
 [tool.mypy]

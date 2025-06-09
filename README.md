@@ -96,6 +96,8 @@ template-customizer process --project ./my-template --config ./config.yml
 
 ## Usage
 
+### Command Line Interface
+
 ```bash
 # Basic usage
 template-customizer process -p ./template -c ./config.yml
@@ -110,6 +112,30 @@ template-customizer process -p ./template -c ./config.yml --dry-run --verbose
 # Show supported file types
 template-customizer info
 ```
+
+### Docker Usage
+
+Run template-customizer via Docker without installing it locally:
+
+```bash
+# Build the Docker image
+./scripts/docker-build.sh
+
+# Run with Docker (interactive mode with confirmation prompts)
+./scripts/docker-run.sh process --dry-run
+
+# Run with Docker (batch mode, no prompts)
+TEMPLATE_DIR=/path/to/your/template ./scripts/docker-run.sh process --yes
+
+# Show help via Docker
+./scripts/docker-run.sh --help
+```
+
+**Docker Features:**
+- No local Python installation required
+- Automatic config file detection in template directory
+- Interactive confirmation prompts work correctly
+- Mount any template directory with `TEMPLATE_DIR` environment variable
 
 ## Template Marker Format
 

@@ -127,5 +127,8 @@ Use the py-ang project as validation target by:
 - Document all rich formatting features
 
 ## Git Commits
-- keep them short and concise. Single line for trivial changes, max 3 additional lines with details only when necessary
-- dont add "co-authored..." comments to any commits
+- Keep them short and concise. Single line for trivial changes, max 3 additional lines with details only when necessary
+- Do NOT add "co-authored..." comments to any commits
+- Only commit when explicitly asked to do so by the user
+- NEVER commit to master unless specifically asked to do so. Changes to master should always be merged from feature branches
+- When committing, use simple commit messages without the automated "Generated with Claude Code" footer
