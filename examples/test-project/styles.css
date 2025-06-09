@@ -1,0 +1,22 @@
+/* Advanced CSS file with template markers */
+
+/* primary_color = {{ values.theme.primary }} */
+.primary {
+    color: #007bff;
+}
+
+/* secondary_color = {{ values.theme.secondary }} */
+.secondary {
+    color: #6c757d;
+}
+
+/* font_family = {{ values.theme.font | quote }} */
+body {
+    font-family: 'Arial, sans-serif';
+}
+
+/* Custom brand color */
+/* brand_color = {{ values.brand.color }} */
+.brand {
+    background-color: #ff6b35;
+}

@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Template Customizer Wrapper Script
+# This script activates the virtual environment and runs template-customizer
+
+set -e
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Path to virtual environment
+VENV_PATH="$SCRIPT_DIR/.venv"
+
+# Check if virtual environment exists
+if [ ! -d "$VENV_PATH" ]; then
+    echo "❌ Virtual environment not found at $VENV_PATH"
+    echo "Please run the following commands first:"
+    echo "  cd $SCRIPT_DIR"
+    echo "  uv venv"
+    echo "  source .venv/bin/activate"
+    echo "  uv pip install -e ."
+    exit 1
+fi
+
+# Check if template-customizer is installed
+if [ ! -f "$VENV_PATH/bin/template-customizer" ]; then
+    echo "❌ template-customizer not found in virtual environment"
+    echo "Please install it first:"
+    echo "  cd $SCRIPT_DIR"
+    echo "  source .venv/bin/activate"
+    echo "  uv pip install -e ."
+    exit 1
+fi
+
+# Activate virtual environment and run template-customizer
+source "$VENV_PATH/bin/activate"
+
+# Pass all arguments to template-customizer
+exec template-customizer "$@"

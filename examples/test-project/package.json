@@ -1,0 +1,12 @@
+{
+  "name": "default-app",
+  "version": "0.1.0",
+  "description": "Default application template",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["template", "default"],
+  "author": "Template Author",
+  "license": "MIT"
+}

@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Claude Code configuration bind mounts
+      - ~/.claude:/home/vscode/.claude:cached
+      - ~/.claude.json:/home/vscode/.claude.json:cached
+      # Git configuration and SSH keys from host
+      - ~/.ssh:/home/vscode/.ssh:cached
+    command: sleep infinity
+    environment:
+      - PYTHONPATH=/workspace
+    network_mode: host

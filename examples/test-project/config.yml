@@ -1,0 +1,45 @@
+project:
+  name: "AwesomeApp"
+  version: "2.1.0"
+  description: "An awesome application built from template"
+
+api:
+  base_url: "https://api.awesomeapp.com"
+  version: "v2"
+
+features:
+  debug: false
+  metrics: true
+  auth_enabled: true
+
+database:
+  url: "postgresql://user:pass@localhost/awesomedb"
+
+server:
+  host: "0.0.0.0"
+  port: 3000
+
+settings:
+  timeout: 60
+
+theme:
+  primary: "#ff4081"
+  secondary: "#3f51b5"
+  font: "Roboto, sans-serif"
+
+brand:
+  color: "#ff6b35"
+
+docker:
+  web_image: "nginx:alpine"
+  web_port: "8080:80"
+  api_image: "python:3.11-slim"
+  api_port: "3000:3000"
+
+environment:
+  mode: "development"
+  debug: true
+
+deployment:
+  environment: "production"
+  replicas: 3

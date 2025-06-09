@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  web:
+    # image = {{ values.docker.web_image }}
+    image: nginx:latest
+    ports:
+      # port = {{ values.docker.web_port }}
+      - "80:80"
+    environment:
+      # env_mode = {{ values.environment.mode | quote }}
+      - NODE_ENV=production
+
+  api:
+    # image = {{ values.docker.api_image }}
+    image: python:3.11
+    ports:
+      # api_port = {{ values.docker.api_port }}
+      - "8000:8000"
+    environment:
+      # debug_mode = {{ values.environment.debug }}
+      - DEBUG=false

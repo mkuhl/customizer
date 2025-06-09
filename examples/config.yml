@@ -1,0 +1,17 @@
+project:
+  name: "AwesomeApp"
+  version: "2.1.0"
+  description: "An awesome application built from template"
+
+api:
+  base_url: "https://api.awesomeapp.com"
+  version: "v2"
+
+features:
+  debug: false
+  metrics: true
+  auth_enabled: true
+
+deployment:
+  environment: "production"
+  replicas: 3
