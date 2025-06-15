@@ -50,8 +50,8 @@ def main(ctx, project, config):
     """
     # Store global options in context
     ctx.ensure_object(dict)
-    ctx.obj['project'] = project
-    ctx.obj['config'] = config
+    ctx.obj["project"] = project
+    ctx.obj["config"] = config
 
 
 @main.command()
@@ -115,9 +115,9 @@ def process(
     try:
         # Use global options if local ones aren't provided
         if project is None:
-            project = ctx.obj.get('project')
+            project = ctx.obj.get("project")
         if config is None:
-            config = ctx.obj.get('config')
+            config = ctx.obj.get("config")
 
         # Validate project is provided
         if project is None:
@@ -487,8 +487,8 @@ def info(ctx):
     console.print()
 
     # Display global options if set
-    project = ctx.obj.get('project')
-    config = ctx.obj.get('config')
+    project = ctx.obj.get("project")
+    config = ctx.obj.get("config")
 
     if project or config:
         console.print("[bold]Global Options:[/bold]")
@@ -538,12 +538,13 @@ def version():
                 f"[blue]Version:[/blue] {version_string}\n"
                 f"[blue]Major:[/blue] {version_obj.major}\n"
                 f"[blue]Minor:[/blue] {version_obj.minor}\n"
-                f"[blue]Patch:[/blue] {version_obj.patch}" +
-                (
+                f"[blue]Patch:[/blue] {version_obj.patch}"
+                + (
                     f"\n[blue]Prerelease:[/blue] {version_obj.prerelease}"
                     if version_obj.prerelease
                     else ""
-                ) + (
+                )
+                + (
                     f"\n[blue]Build:[/blue] {version_obj.build}"
                     if version_obj.build
                     else ""
@@ -572,24 +573,28 @@ def version():
         deps_info = []
         try:
             import jinja2
+
             deps_info.append(f"[blue]Jinja2:[/blue] {jinja2.__version__}")
         except ImportError:
             deps_info.append("[red]Jinja2:[/red] Not installed")
 
         try:
             import yaml
+
             deps_info.append(f"[blue]PyYAML:[/blue] {yaml.__version__}")
         except ImportError:
             deps_info.append("[red]PyYAML:[/red] Not installed")
 
         try:
             import click
+
             deps_info.append(f"[blue]Click:[/blue] {click.__version__}")
         except ImportError:
             deps_info.append("[red]Click:[/red] Not installed")
 
         try:
             import rich
+
             deps_info.append(f"[blue]Rich:[/blue] {rich.__version__}")
         except ImportError:
             deps_info.append("[red]Rich:[/red] Not installed")

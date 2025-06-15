@@ -75,21 +75,13 @@ class SemanticVersion:
     def bump_major(self) -> "SemanticVersion":
         """Return new version with major version incremented."""
         return SemanticVersion(
-            major=self.major + 1,
-            minor=0,
-            patch=0,
-            prerelease=None,
-            build=None
+            major=self.major + 1, minor=0, patch=0, prerelease=None, build=None
         )
 
     def bump_minor(self) -> "SemanticVersion":
         """Return new version with minor version incremented."""
         return SemanticVersion(
-            major=self.major,
-            minor=self.minor + 1,
-            patch=0,
-            prerelease=None,
-            build=None
+            major=self.major, minor=self.minor + 1, patch=0, prerelease=None, build=None
         )
 
     def bump_patch(self) -> "SemanticVersion":
@@ -99,7 +91,7 @@ class SemanticVersion:
             minor=self.minor,
             patch=self.patch + 1,
             prerelease=None,
-            build=None
+            build=None,
         )
 
 
@@ -132,8 +124,12 @@ class VersionParser:
         version_string = version_string.strip()
 
         # Additional validation for common invalid patterns
-        if (version_string.endswith('-') or version_string.endswith('+') or
-            version_string.startswith('v') or not version_string):
+        if (
+            version_string.endswith("-")
+            or version_string.endswith("+")
+            or version_string.startswith("v")
+            or not version_string
+        ):
             raise ValueError(f"Invalid version string: {version_string}")
 
         match = cls.VERSION_PATTERN.match(version_string)
@@ -147,7 +143,7 @@ class VersionParser:
             minor=int(groups["minor"]),
             patch=int(groups["patch"]),
             prerelease=groups["prerelease"],
-            build=groups["build"]
+            build=groups["build"],
         )
 
     @classmethod
@@ -253,4 +249,3 @@ def get_version_info() -> Tuple[str, SemanticVersion]:
 
     version_obj = VersionParser.parse(__version__)
     return __version__, version_obj
-

@@ -79,11 +79,7 @@ class VersionBumper:
 
         # Replace __version__ = "old_version" with __version__ = "new_version"
         version_pattern = r'(__version__\s*=\s*["\'])([^"\']+)(["\'])'
-        updated_content = re.sub(
-            version_pattern,
-            f"\\g<1>{new_version}\\g<3>",
-            content
-        )
+        updated_content = re.sub(version_pattern, f"\\g<1>{new_version}\\g<3>", content)
 
         self.init_file.write_text(updated_content, encoding="utf-8")
 
@@ -102,9 +98,7 @@ class VersionBumper:
         version_pattern = r'(version\s*=\s*["\'])([^"\']+)(["\'])'
         if re.search(version_pattern, content):
             updated_content = re.sub(
-                version_pattern,
-                f"\\g<1>{new_version}\\g<3>",
-                content
+                version_pattern, f"\\g<1>{new_version}\\g<3>", content
             )
             self.pyproject_file.write_text(updated_content, encoding="utf-8")
 
@@ -114,8 +108,7 @@ class VersionCompatibilityChecker:
 
     @staticmethod
     def check_config_compatibility(
-        config_path: Path,
-        tool_version: str
+        config_path: Path, tool_version: str
     ) -> tuple[bool, Optional[str]]:
         """Check if configuration file is compatible with tool version.
 
