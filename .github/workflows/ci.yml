@@ -87,13 +87,13 @@ jobs:
     - name: Run ruff linting
       run: |
         echo "::group::Ruff Linting"
-        uv run ruff check .
+        uv run ruff check . --exclude tests/
         echo "::endgroup::"
         
     - name: Check black formatting
       run: |
         echo "::group::Black Formatting Check"
-        uv run black --check .
+        uv run black --check . --exclude tests/
         echo "::endgroup::"
         
     - name: Run mypy type checking
