@@ -2,7 +2,7 @@
 
 import re
 from dataclasses import dataclass
-from typing import Optional, Tuple, Any
+from typing import Any, Optional, Tuple
 
 
 @dataclass
