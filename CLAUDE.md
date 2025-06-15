@@ -132,6 +132,21 @@ Use the py-ang project as validation target by:
 - Maintain comprehensive test coverage
 - Document all rich formatting features
 
+## CI/CD Pipeline
+- **GitHub Actions**: Complete CI/CD pipeline with 3 parallel jobs (test, quality, docker)
+- **Quality Gates**: All code must pass ruff linting, black formatting, mypy type checking, and pytest
+- **Scope**: Code quality checks limited to `src/` directory only
+- **Docker**: Automated Docker image building and testing with dynamic versioning
+- **Coverage**: Minimum 50% test coverage required (currently 77%+)
+- **MyPy Configuration**: Pragmatic settings for CI compatibility (some modules excluded temporarily)
+
+## Development Workflow
+- **Branch Strategy**: Use `feature-*` branches for new development
+- **CI Requirements**: All changes must pass CI checks before merging to master
+- **Pull Requests**: Required for all changes to master branch
+- **Local Testing**: Run `pytest`, `ruff check src/`, `black --check src/`, `mypy src/` before pushing
+- **Docker Testing**: Use `./scripts/docker-build.sh` to test Docker integration locally
+
 ## Git Commits
 - Always use the mkuhl and mkuhl@softmachine.at as git user
 - Keep them short and concise. Single line for trivial changes, max 3 additional lines with details only when necessary
