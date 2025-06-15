@@ -1,0 +1,176 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Python 3.12)
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        
+    - name: Cache uv packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/uv
+        key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+          
+    - name: Install dependencies
+      run: |
+        uv pip install --system -e ".[dev]"
+        
+    - name: Run tests with coverage
+      run: |
+        uv run pytest --cov=template_customizer --cov-report=xml --cov-report=term-missing --cov-fail-under=50
+        # TODO: Increase coverage threshold to 80% as we add more tests
+        
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage.xml
+
+  quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        
+    - name: Cache uv packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/uv
+        key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+          
+    - name: Install dependencies
+      run: |
+        uv pip install --system -e ".[dev]"
+        
+    - name: Run ruff linting
+      run: |
+        echo "::group::Ruff Linting"
+        uv run ruff check src/
+        echo "::endgroup::"
+        
+    - name: Check black formatting
+      run: |
+        echo "::group::Black Formatting Check"
+        uv run black --check src/
+        echo "::endgroup::"
+        
+    - name: Run mypy type checking
+      run: |
+        echo "::group::Mypy Type Checking"
+        uv run mypy src/
+        echo "::endgroup::"
+
+  docker-build:
+    name: Docker Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        
+    - name: Cache uv packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/uv
+        key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+          
+    - name: Install dependencies
+      run: |
+        uv pip install --system -e ".[dev]"
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build Docker image
+      run: |
+        ./scripts/docker-build.sh
+        
+    - name: Test Docker image - Version
+      run: |
+        docker run --rm template-customizer:latest version
+        
+    - name: Test Docker image - Help
+      run: |
+        docker run --rm template-customizer:latest --help
+        
+    - name: Test Docker image - Process dry-run
+      run: |
+        # Create test config for Docker test
+        mkdir -p test-docker-template
+        cat > test-docker-template/config.yml << 'EOF'
+        project:
+          name: "TestApp"
+          version: "1.0.0"
+        EOF
+        
+        cat > test-docker-template/test.py << 'EOF'
+        # app_name = {{ values.project.name | quote }}
+        app_name = "DefaultApp"
+        EOF
+        
+        # Run the Docker container with the test template
+        docker run --rm -v $PWD/test-docker-template:/workdir template-customizer:latest process --dry-run
+        
+    - name: Save Docker image as artifact
+      run: |
+        docker save template-customizer:latest | gzip > template-customizer.tar.gz
+        
+    - name: Upload Docker image artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image
+        path: template-customizer.tar.gz

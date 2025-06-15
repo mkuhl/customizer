@@ -17,6 +17,8 @@ from .core.scanner import FileScanner
 from .core.writer import FileChange, FileWriter
 from .utils.file_types import FileTypeDetector
 from .utils.validation import ParameterValidator, ProjectValidator
+from .utils.version import get_version_info
+from .utils.version_bump import VersionCompatibilityChecker
 
 # Initialize rich console for colored output
 console = Console()
@@ -48,8 +50,8 @@ def main(ctx, project, config):
     """
     # Store global options in context
     ctx.ensure_object(dict)
-    ctx.obj['project'] = project
-    ctx.obj['config'] = config
+    ctx.obj["project"] = project
+    ctx.obj["config"] = config
 
 
 @main.command()
@@ -113,16 +115,16 @@ def process(
     try:
         # Use global options if local ones aren't provided
         if project is None:
-            project = ctx.obj.get('project')
+            project = ctx.obj.get("project")
         if config is None:
-            config = ctx.obj.get('config')
-        
+            config = ctx.obj.get("config")
+
         # Validate project is provided
         if project is None:
             console.print("[red]Error:[/red] Project directory not specified")
             console.print("Use --project option globally or with process command")
             sys.exit(1)
-            
+
         # Auto-detect config file if not provided
         if config is None:
             config = _find_config_file(project, verbose)
@@ -168,8 +170,10 @@ def process(
         # Check version compatibility
         try:
             current_version, _ = get_version_info()
-            is_compatible, warning = VersionCompatibilityChecker.check_config_compatibility(
-                config, current_version
+            is_compatible, warning = (
+                VersionCompatibilityChecker.check_config_compatibility(
+                    config, current_version
+                )
             )
             if not is_compatible and warning:
                 console.print(f"[yellow]Warning:[/yellow] {warning}")
@@ -481,11 +485,11 @@ def info(ctx):
     # Display version information
     console.print(f"[blue]Template Customizer v{__version__}[/blue]")
     console.print()
-    
+
     # Display global options if set
-    project = ctx.obj.get('project')
-    config = ctx.obj.get('config')
-    
+    project = ctx.obj.get("project")
+    config = ctx.obj.get("config")
+
     if project or config:
         console.print("[bold]Global Options:[/bold]")
         if project:
@@ -527,61 +531,74 @@ def version():
     """Show detailed version information."""
     try:
         version_string, version_obj = get_version_info()
-        
+
         console.print(
             Panel(
                 f"[bold green]Template Customizer[/bold green]\n"
                 f"[blue]Version:[/blue] {version_string}\n"
                 f"[blue]Major:[/blue] {version_obj.major}\n"
                 f"[blue]Minor:[/blue] {version_obj.minor}\n"
-                f"[blue]Patch:[/blue] {version_obj.patch}" +
-                (f"\n[blue]Prerelease:[/blue] {version_obj.prerelease}" if version_obj.prerelease else "") +
-                (f"\n[blue]Build:[/blue] {version_obj.build}" if version_obj.build else ""),
+                f"[blue]Patch:[/blue] {version_obj.patch}"
+                + (
+                    f"\n[blue]Prerelease:[/blue] {version_obj.prerelease}"
+                    if version_obj.prerelease
+                    else ""
+                )
+                + (
+                    f"\n[blue]Build:[/blue] {version_obj.build}"
+                    if version_obj.build
+                    else ""
+                ),
                 title="🏷️ Version Information",
                 border_style="green",
             )
         )
-        
+
         # Show Python and dependencies info
-        import sys
         import platform
-        
+        import sys
+
         console.print(
             Panel(
-                f"[blue]Python:[/blue] {sys.version.split()[0]} ({platform.python_implementation()})\n"
+                f"[blue]Python:[/blue] {sys.version.split()[0]} "
+                f"({platform.python_implementation()})\n"
                 f"[blue]Platform:[/blue] {platform.platform()}\n"
                 f"[blue]Architecture:[/blue] {platform.machine()}",
                 title="🐍 Environment",
                 border_style="blue",
             )
         )
-        
+
         # Show core dependencies
         deps_info = []
         try:
             import jinja2
+
             deps_info.append(f"[blue]Jinja2:[/blue] {jinja2.__version__}")
         except ImportError:
             deps_info.append("[red]Jinja2:[/red] Not installed")
-        
+
         try:
             import yaml
+
             deps_info.append(f"[blue]PyYAML:[/blue] {yaml.__version__}")
         except ImportError:
             deps_info.append("[red]PyYAML:[/red] Not installed")
-        
+
         try:
             import click
+
             deps_info.append(f"[blue]Click:[/blue] {click.__version__}")
         except ImportError:
             deps_info.append("[red]Click:[/red] Not installed")
-        
+
         try:
             import rich
+
             deps_info.append(f"[blue]Rich:[/blue] {rich.__version__}")
         except ImportError:
             deps_info.append("[red]Rich:[/red] Not installed")
-        
+
         if deps_info:
             console.print(
                 Panel(
@@ -590,7 +607,7 @@ def version():
                     border_style="cyan",
                 )
             )
-            
+
     except Exception as e:
         console.print(f"[red]Error getting version information:[/red] {e}")
 

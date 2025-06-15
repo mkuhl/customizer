@@ -23,7 +23,7 @@ class ParameterValidator:
         Returns:
             List of validation error messages (empty if valid)
         """
-        errors = []
+        errors: List[str] = []
 
         if not isinstance(parameters, dict):
             errors.append("Configuration must be a dictionary/object")

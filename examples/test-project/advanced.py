@@ -3,7 +3,7 @@
 # app_name = {{ values.project.name | quote }}
 APP_NAME = "DefaultApp"
 
-# version: {{ values.project.version | quote }}  
+# version: {{ values.project.version | quote }}
 VERSION = "0.1.0"
 
 # "database_url" = {{ values.database.url | quote }}
@@ -16,7 +16,7 @@ DEBUG_ENABLED = True
 class Config:
     # host = {{ values.server.host | quote }}
     HOST = "localhost"
-    
+
     # port = {{ values.server.port }}
     PORT = 8000
 

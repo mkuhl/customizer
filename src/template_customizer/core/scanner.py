@@ -2,7 +2,7 @@
 
 import fnmatch
 from pathlib import Path
-from typing import Iterator, List
+from typing import Iterator, List, Optional
 
 
 class FileScanner:
@@ -32,8 +32,8 @@ class FileScanner:
     def __init__(
         self,
         project_path: Path,
-        include_patterns: List[str] = None,
-        exclude_patterns: List[str] = None,
+        include_patterns: Optional[List[str]] = None,
+        exclude_patterns: Optional[List[str]] = None,
     ):
         """Initialize file scanner.
 

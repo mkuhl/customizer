@@ -3,7 +3,7 @@
 # app_name = {{ values.project.name | quote }}
 app_name = "DefaultApp"
 
-# version = {{ values.project.version | quote }}  
+# version = {{ values.project.version | quote }}
 version = "0.1.0"
 
 # api_base_url = {{ values.api.base_url | quote }}

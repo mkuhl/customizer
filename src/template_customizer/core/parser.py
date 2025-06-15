@@ -2,7 +2,7 @@
 
 import re
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 
 class TemplateMarker(NamedTuple):
@@ -249,7 +249,7 @@ class CommentParser:
 
     def validate_template_syntax_detailed(
         self, template_expression: str
-    ) -> tuple[bool, Optional[str]]:
+    ) -> Tuple[bool, Optional[str]]:
         """Validate Jinja2 template syntax with detailed error information.
 
         Args:
