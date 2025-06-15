@@ -29,8 +29,8 @@ pip install template-customizer
 ### Development Setup
 ```bash
 # Clone the repository
-git clone https://github.com/username/template-customizer.git
-cd template-customizer
+git clone https://github.com/mkuhl/customizer.git
+cd customizer
 
 # Create virtual environment and install dependencies
 uv venv
@@ -115,7 +115,36 @@ template-customizer info
 
 ### Docker Usage
 
-Run template-customizer via Docker without installing it locally:
+#### Option 1: Use Published Image (Recommended)
+
+Pull and run the pre-built image from GitHub Container Registry:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/mkuhl/customizer:latest
+
+# Show help
+docker run --rm ghcr.io/mkuhl/customizer:latest --help
+
+# Show version information  
+docker run --rm ghcr.io/mkuhl/customizer:latest version
+
+# Show supported file types
+docker run --rm ghcr.io/mkuhl/customizer:latest info
+
+# Preview changes (dry run) - mount your template directory
+docker run --rm -v /path/to/your/template:/workdir ghcr.io/mkuhl/customizer:latest process --dry-run
+
+# Apply changes with auto-detected config
+docker run --rm -v /path/to/your/template:/workdir ghcr.io/mkuhl/customizer:latest process --yes
+
+# With custom config file
+docker run --rm -v /path/to/your/template:/workdir ghcr.io/mkuhl/customizer:latest process --config custom-config.yml --dry-run
+```
+
+#### Option 2: Build Locally
+
+Build and run using local Docker build:
 
 ```bash
 # Build the Docker image
@@ -132,10 +161,11 @@ TEMPLATE_DIR=/path/to/your/template ./scripts/docker-run.sh process --yes
 ```
 
 **Docker Features:**
-- No local Python installation required
-- Automatic config file detection in template directory
-- Interactive confirmation prompts work correctly
-- Mount any template directory with `TEMPLATE_DIR` environment variable
+- ✅ **Published Images**: Pre-built images available on GitHub Container Registry
+- ✅ **No local Python installation required**
+- ✅ **Automatic config file detection in template directory**
+- ✅ **Interactive confirmation prompts work correctly**
+- ✅ **Easy CI/CD integration with published images**
 
 ## Template Marker Format
 
@@ -246,5 +276,5 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## Support
 
 - **Documentation**: See [USAGE.md](USAGE.md) for detailed usage examples
-- **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/username/template-customizer/issues)
+- **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/mkuhl/customizer/issues)
 - **Development**: See [CLAUDE.md](CLAUDE.md) for development guidelines

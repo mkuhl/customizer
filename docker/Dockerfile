@@ -76,5 +76,5 @@ CMD ["process", "--help"]
 LABEL org.opencontainers.image.title="Template Customizer"
 LABEL org.opencontainers.image.description="A tool for customizing project templates using comment-based markers"
 LABEL org.opencontainers.image.version="${VERSION:-unknown}"
-LABEL org.opencontainers.image.source="https://github.com/example/template-customizer"
+LABEL org.opencontainers.image.source="https://github.com/mkuhl/customizer"
 LABEL org.opencontainers.image.licenses="MIT"
