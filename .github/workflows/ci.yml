@@ -262,3 +262,122 @@ jobs:
         
         echo "✅ Published successfully!"
         echo "🌐 Available at: https://github.com/mkuhl/customizer/pkgs/container/customizer"
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [test, quality, docker-publish]
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        
+    - name: Extract version from tag
+      id: version
+      run: |
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        VERSION=${TAG_NAME#v}
+        echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "📋 Tag: ${TAG_NAME}"
+        echo "📦 Version: ${VERSION}"
+        
+    - name: Generate customizer script
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        echo "🔧 Generating customizer script for version ${VERSION}"
+        
+        # Replace version placeholder in template
+        sed "s/__VERSION__/${VERSION}/g" scripts/customizer.template > customizer
+        chmod +x customizer
+        
+        # Verify the generated script
+        echo "📋 Generated script preview:"
+        head -20 customizer
+        
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        
+        cat > release_notes.md << EOF
+        # Template Customizer v${VERSION}
+        
+        ## 🚀 Quick Start
+        
+        Download and run the Template Customizer with a single script:
+        
+        \`\`\`bash
+        # Download the customizer script
+        curl -L -o customizer https://github.com/mkuhl/customizer/releases/download/${{ steps.version.outputs.tag }}/customizer
+        chmod +x customizer
+        
+        # Use immediately
+        ./customizer --help
+        ./customizer process --dry-run
+        \`\`\`
+        
+        ## 📦 What's Included
+        
+        - **\`customizer\`** - Standalone script that automatically pulls and runs \`ghcr.io/mkuhl/customizer:${VERSION}\`
+        - **No installation required** - Just download, make executable, and run
+        - **Docker-based** - Consistent environment across all platforms
+        
+        ## 🐳 Docker Images
+        
+        The following Docker images are available for this release:
+        
+        - \`ghcr.io/mkuhl/customizer:${VERSION}\` (specific version)
+        - \`ghcr.io/mkuhl/customizer:latest\` (latest stable)
+        
+        \`\`\`bash
+        # Run directly with Docker
+        docker pull ghcr.io/mkuhl/customizer:${VERSION}
+        docker run --rm -v \$PWD:/workdir ghcr.io/mkuhl/customizer:${VERSION} process --dry-run
+        \`\`\`
+        
+        ## 📚 Documentation
+        
+        - **Usage Guide**: See [USAGE.md](https://github.com/mkuhl/customizer/blob/master/USAGE.md)
+        - **Development**: See [CLAUDE.md](https://github.com/mkuhl/customizer/blob/master/CLAUDE.md)
+        - **Repository**: https://github.com/mkuhl/customizer
+        
+        ## 🔧 Requirements
+        
+        - Docker installed and running
+        - Internet connection for initial image download
+        
+        ---
+        
+        **Full Documentation**: https://github.com/mkuhl/customizer
+        **Docker Images**: https://github.com/mkuhl/customizer/pkgs/container/customizer
+        EOF
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.tag }}
+        name: Template Customizer v${{ steps.version.outputs.version }}
+        body_path: release_notes.md
+        draft: false
+        prerelease: false
+        generate_release_notes: false
+        files: |
+          customizer

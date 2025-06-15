@@ -1,0 +1,163 @@
+#!/bin/bash
+set -e
+
+# Template Customizer - Standalone Docker Wrapper
+# Version: __VERSION__
+# 
+# This script automatically pulls and runs the Template Customizer Docker image
+# for the specific version, mounting the current directory as the workspace.
+#
+# Usage: ./customizer [OPTIONS] COMMAND [ARGS]...
+# 
+# For help: ./customizer --help
+# For version info: ./customizer version
+
+# Script metadata
+SCRIPT_VERSION="__VERSION__"
+IMAGE_REGISTRY="ghcr.io/mkuhl/customizer"
+IMAGE_TAG="${SCRIPT_VERSION}"
+FULL_IMAGE="${IMAGE_REGISTRY}:${IMAGE_TAG}"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
+}
+
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
+
+# Function to check if Docker is available
+check_docker() {
+    if ! command -v docker &> /dev/null; then
+        print_error "Docker is required but not installed."
+        echo "Please install Docker first: https://docs.docker.com/get-docker/"
+        exit 1
+    fi
+    
+    if ! docker info &> /dev/null; then
+        print_error "Docker is not running or not accessible."
+        echo "Please start Docker and ensure you have permission to run Docker commands."
+        exit 1
+    fi
+}
+
+# Function to pull image if needed
+ensure_image() {
+    print_info "Checking for Template Customizer image: ${FULL_IMAGE}"
+    
+    # Check if image exists locally
+    if docker image inspect "${FULL_IMAGE}" &> /dev/null; then
+        print_success "Image already available locally"
+        return 0
+    fi
+    
+    print_info "Pulling Template Customizer image..."
+    if docker pull "${FULL_IMAGE}"; then
+        print_success "Image pulled successfully"
+    else
+        print_error "Failed to pull image: ${FULL_IMAGE}"
+        echo "Please check your internet connection and try again."
+        exit 1
+    fi
+}
+
+# Function to show script version info
+show_version() {
+    echo "Template Customizer Wrapper Script"
+    echo "Version: ${SCRIPT_VERSION}"
+    echo "Docker Image: ${FULL_IMAGE}"
+    echo ""
+    echo "To see Template Customizer version:"
+    echo "  ./customizer version"
+}
+
+# Function to show usage help
+show_help() {
+    cat << EOF
+Template Customizer - Standalone Docker Wrapper v${SCRIPT_VERSION}
+
+This script runs Template Customizer using Docker, automatically mounting
+the current directory as the workspace.
+
+USAGE:
+    ./customizer [OPTIONS] COMMAND [ARGS]...
+
+EXAMPLES:
+    # Show Template Customizer help
+    ./customizer --help
+    
+    # Show version information
+    ./customizer version
+    
+    # Show supported file types
+    ./customizer info
+    
+    # Preview changes (dry run)
+    ./customizer process --dry-run
+    
+    # Apply changes with auto-detected config
+    ./customizer process --yes
+    
+    # Use specific config file
+    ./customizer process --config my-config.yml --dry-run
+
+SCRIPT OPTIONS:
+    --script-version    Show wrapper script version
+    --script-help       Show this help message
+
+REQUIREMENTS:
+    - Docker must be installed and running
+    - Current directory will be mounted as /workdir in the container
+    - Config files should be in the current directory
+
+For more information, visit: https://github.com/mkuhl/customizer
+EOF
+}
+
+# Parse script-specific arguments
+case "${1:-}" in
+    --script-version)
+        show_version
+        exit 0
+        ;;
+    --script-help)
+        show_help
+        exit 0
+        ;;
+esac
+
+# Check prerequisites
+check_docker
+
+# Ensure we have the Docker image
+ensure_image
+
+# Get current working directory for mounting
+WORKDIR="$(pwd)"
+
+# Run the Template Customizer container
+print_info "Running Template Customizer v${SCRIPT_VERSION}..."
+print_info "Workspace: ${WORKDIR}"
+
+# Execute the container with all arguments passed through
+# Mount current directory as /workdir and pass all arguments
+exec docker run --rm \
+    -v "${WORKDIR}:/workdir" \
+    "${FULL_IMAGE}" \
+    "$@"

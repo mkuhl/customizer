@@ -133,11 +133,12 @@ Use the py-ang project as validation target by:
 - Document all rich formatting features
 
 ## CI/CD Pipeline
-- **GitHub Actions**: ✅ Complete CI/CD pipeline with 4 parallel jobs (test, quality, docker-build, docker-publish) - **ACTIVE ON MASTER**
+- **GitHub Actions**: ✅ Complete CI/CD pipeline with 5 parallel jobs (test, quality, docker-build, docker-publish, release) - **ACTIVE ON MASTER**
 - **Quality Gates**: All code must pass ruff linting, black formatting, mypy type checking, and pytest
 - **Scope**: Code quality checks limited to `src/` directory only
 - **Docker Build**: Automated Docker image building and testing with dynamic versioning
 - **Docker Publish**: Automated publishing to GitHub Container Registry (GHCR) at `ghcr.io/mkuhl/customizer`
+- **Release Automation**: Automated GitHub Releases with standalone customizer script on version tags
 - **Coverage**: Minimum 50% test coverage required (currently 77%+)
 - **MyPy Configuration**: Pragmatic settings for CI compatibility (some modules excluded temporarily)
 - **Status**: ✅ All checks passing on master branch
@@ -149,6 +150,7 @@ Use the py-ang project as validation target by:
 - **Local Testing**: Run `pytest`, `ruff check src/`, `black --check src/`, `mypy src/` before pushing
 - **Docker Testing**: Use `./scripts/docker-build.sh` to test Docker integration locally
 - **Manual Publishing**: Use `./scripts/docker-publish.sh` for manual Docker image publishing to GHCR
+- **Release Process**: Update version in `__init__.py` → create git tag `v*.*.*` → automated release creation
 
 ## Git Commits
 - Always use the mkuhl and mkuhl@softmachine.at as git user

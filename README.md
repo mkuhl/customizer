@@ -24,7 +24,7 @@ uv pip install -e .
 ### Using pip
 ```bash
 pip install template-customizer
-```
+```/exit
 
 ### Development Setup
 ```bash
