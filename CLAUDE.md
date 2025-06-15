@@ -119,6 +119,12 @@ Use the py-ang project as validation target by:
 - **rich**: Beautiful terminal output
 - **pathlib**: File system operations (built-in)
 
+## Framework and Library Documentation
+- **ALWAYS use Context7** when working with frameworks, libraries, or external packages
+- When implementing features using Click, Rich, Jinja2, or any other dependency, append "use context7" to get the latest documentation
+- This ensures code examples and API usage are current and accurate
+- Example: "How do I create a progress bar with Rich? use context7"
+
 ## Important Notes
 - This is a **standalone project** - no dependencies on parent py-ang
 - Use `uv` for Python package management
@@ -127,6 +133,7 @@ Use the py-ang project as validation target by:
 - Document all rich formatting features
 
 ## Git Commits
+- Always use the mkuhl and mkuhl@softmachine.at as git user
 - Keep them short and concise. Single line for trivial changes, max 3 additional lines with details only when necessary
 - Do NOT add "co-authored..." comments to any commits
 - Only commit when explicitly asked to do so by the user

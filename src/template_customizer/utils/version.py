@@ -109,8 +109,8 @@ class VersionParser:
         r"^(?P<major>0|[1-9]\d*)"
         r"\.(?P<minor>0|[1-9]\d*)"
         r"\.(?P<patch>0|[1-9]\d*)"
-        r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)"
-        r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))"
+        r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z][0-9a-zA-Z-]*)"
+        r"(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z][0-9a-zA-Z-]*))*))"
         r"?(?:\+(?P<build>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
     )
     
@@ -128,6 +128,11 @@ class VersionParser:
             ValueError: If version string is invalid
         """
         version_string = version_string.strip()
+        
+        # Additional validation for common invalid patterns
+        if (version_string.endswith('-') or version_string.endswith('+') or
+            version_string.startswith('v') or not version_string):
+            raise ValueError(f"Invalid version string: {version_string}")
         
         match = cls.VERSION_PATTERN.match(version_string)
         if not match:
