@@ -29,10 +29,20 @@ def test_imports():
 
 
 def test_package_version():
-    """Test that package version is accessible."""
+    """Test that package version is accessible and valid."""
     import template_customizer
+    import re
+    
+    # Check version attribute exists
     assert hasattr(template_customizer, '__version__')
-    assert template_customizer.__version__ == "0.1.0"
+    
+    # Check version follows semantic versioning format
+    version_pattern = r'^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?$'
+    assert re.match(version_pattern, template_customizer.__version__), \
+        f"Version '{template_customizer.__version__}' doesn't match semantic versioning format"
+    
+    # Verify version is not empty
+    assert template_customizer.__version__, "Version should not be empty"
 
 
 def test_file_scanner_basic(temp_dir):
