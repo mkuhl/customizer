@@ -2,7 +2,7 @@
 
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple, List
 
 from .version import VersionManager, VersionParser
 
@@ -109,7 +109,7 @@ class VersionCompatibilityChecker:
     @staticmethod
     def check_config_compatibility(
         config_path: Path, tool_version: str
-    ) -> tuple[bool, Optional[str]]:
+    ) -> Tuple[bool, Optional[str]]:
         """Check if configuration file is compatible with tool version.
 
         Args:
@@ -166,7 +166,7 @@ class VersionCompatibilityChecker:
             return True, None
 
 
-def get_version_changelog_entry(version: str, changes: list[str]) -> str:
+def get_version_changelog_entry(version: str, changes: List[str]) -> str:
     """Generate a changelog entry for a version.
 
     Args:

@@ -2,7 +2,7 @@
 
 import re
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 
 
 @dataclass
@@ -24,7 +24,7 @@ class SemanticVersion:
             version += f"+{self.build}"
         return version
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Check if two versions are equal."""
         if not isinstance(other, SemanticVersion):
             return False
@@ -35,7 +35,7 @@ class SemanticVersion:
             and self.prerelease == other.prerelease
         )
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: Any) -> bool:
         """Check if this version is less than another."""
         if not isinstance(other, SemanticVersion):
             return NotImplemented
@@ -56,15 +56,15 @@ class SemanticVersion:
 
         return self.prerelease < other.prerelease
 
-    def __le__(self, other) -> bool:
+    def __le__(self, other: Any) -> bool:
         """Check if this version is less than or equal to another."""
         return self == other or self < other
 
-    def __gt__(self, other) -> bool:
+    def __gt__(self, other: Any) -> bool:
         """Check if this version is greater than another."""
         return not self <= other
 
-    def __ge__(self, other) -> bool:
+    def __ge__(self, other: Any) -> bool:
         """Check if this version is greater than or equal to another."""
         return not self < other
 
