@@ -6,44 +6,32 @@
 
 A powerful tool for customizing project templates using comment-based markers while keeping templates fully functional and compileable.
 
-## Overview
-
-Template Customizer revolutionizes template management by using comment-based markers that preserve your template's functionality. Unlike traditional templating tools that require placeholder variables and break compilation, this tool processes comments to identify customization points and replaces the following lines with rendered values.
-
-## Installation
-
-### Using uv (recommended)
-```bash
-# Install from PyPI (when published)
-uv pip install template-customizer
-
-# Or install in development mode
-uv pip install -e .
-```
-
-### Using pip
-```bash
-pip install template-customizer
-```/exit
-
-### Development Setup
-```bash
-# Clone the repository
-git clone https://github.com/mkuhl/customizer.git
-cd customizer
-
-# Create virtual environment and install dependencies
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -e ".[dev]"
-
-# Run tests to verify installation
-pytest
-```
-
 ## Quick Start
 
-1. **Add template markers to your template files:**
+**Standalone script installation:**
+
+```bash
+# Download and install the latest version
+curl -L https://github.com/mkuhl/customizer/releases/latest/download/customizer -o customizer
+chmod +x customizer
+sudo mv customizer /usr/local/bin/
+
+# Verify installation
+customizer --version
+```
+
+**Docker usage:**
+
+```bash
+# Run with Docker
+docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest process --dry-run
+```
+
+## Usage Examples
+
+### Basic Template Customization
+
+1. **Add markers to your template files:**
 
 ```python
 # app_name = {{ values.project.name | quote }}
@@ -61,129 +49,99 @@ project:
   name: "MyAwesome App"
   version: "1.2.0"
   description: "Built from template"
-
-api:
-  base_url: "https://api.myapp.com"
 ```
 
-3. **Run the customizer:**
+3. **Customize your template:**
 
 ```bash
 # Preview changes
-template-customizer process --project ./my-template --config ./config.yml --dry-run
+customizer process --project ./my-template --config ./config.yml --dry-run
 
 # Apply changes
-template-customizer process --project ./my-template --config ./config.yml
-```
-
-## Features
-
-- **Comment-based markers** - Templates remain functional
-- **Multi-language support** - Python, JavaScript, YAML, HTML, CSS, and more
-- **Rich CLI output** - Progress bars, colored output, and detailed previews
-- **Dry-run mode** - Preview changes before applying
-- **Safe processing** - Automatic backups and validation
-- **Flexible filtering** - Include/exclude patterns for files
-
-## Supported File Types
-
-- Python (`.py`) - `# marker = {{ expression }}`
-- JavaScript/TypeScript (`.js`, `.ts`) - `// marker = {{ expression }}`
-- CSS/SCSS (`.css`, `.scss`) - `/* marker = {{ expression }} */`
-- HTML/XML (`.html`, `.xml`) - `<!-- marker = {{ expression }} -->`
-- YAML (`.yml`, `.yaml`) - `# marker = {{ expression }}`
-- And many more...
-
-## Usage
-
-### Command Line Interface
-
-```bash
-# Basic usage
-template-customizer process -p ./template -c ./config.yml
-
-# With filtering
-template-customizer process -p ./template -c ./config.yml \
-  --include "*.py,*.js" --exclude "*test*"
-
-# Dry run with verbose output
-template-customizer process -p ./template -c ./config.yml --dry-run --verbose
-
-# Show supported file types
-template-customizer info
+customizer process --project ./my-template --config ./config.yml --yes
 ```
 
 ### Docker Usage
 
-#### Option 1: Use Published Image (Recommended)
-
-Pull and run the pre-built image from GitHub Container Registry:
+Using Docker requires no local Python installation:
 
 ```bash
 # Pull the latest image
 docker pull ghcr.io/mkuhl/customizer:latest
 
-# Show help
-docker run --rm ghcr.io/mkuhl/customizer:latest --help
+# Preview changes with auto-detected config
+docker run --rm -v "/path/to/template:/workdir" ghcr.io/mkuhl/customizer:latest process --dry-run
 
-# Show version information  
-docker run --rm ghcr.io/mkuhl/customizer:latest version
+# Apply changes
+docker run --rm -v "/path/to/template:/workdir" ghcr.io/mkuhl/customizer:latest process --yes
 
-# Show supported file types
-docker run --rm ghcr.io/mkuhl/customizer:latest info
+# Use custom configuration file
+docker run --rm -v "/path/to/template:/workdir" ghcr.io/mkuhl/customizer:latest process --config custom-config.yml --dry-run
 
-# Preview changes (dry run) - mount your template directory
-docker run --rm -v /path/to/your/template:/workdir ghcr.io/mkuhl/customizer:latest process --dry-run
-
-# Apply changes with auto-detected config
-docker run --rm -v /path/to/your/template:/workdir ghcr.io/mkuhl/customizer:latest process --yes
-
-# With custom config file
-docker run --rm -v /path/to/your/template:/workdir ghcr.io/mkuhl/customizer:latest process --config custom-config.yml --dry-run
+# Generate output to a separate directory
+docker run --rm -v "/path/to/template:/workdir" -v "/path/to/output:/output" ghcr.io/mkuhl/customizer:latest process --output /output --yes
 ```
 
-#### Option 2: Build Locally
+### Advanced Examples
 
-Build and run using local Docker build:
-
+**Filter files by pattern:**
 ```bash
-# Build the Docker image
-./scripts/docker-build.sh
+# Only process Python and JavaScript files
+customizer process --project ./template --config ./config.yml --include "*.py,*.js" --dry-run
 
-# Run with Docker (interactive mode with confirmation prompts)
-./scripts/docker-run.sh process --dry-run
-
-# Run with Docker (batch mode, no prompts)
-TEMPLATE_DIR=/path/to/your/template ./scripts/docker-run.sh process --yes
-
-# Show help via Docker
-./scripts/docker-run.sh --help
+# Exclude test files
+customizer process --project ./template --config ./config.yml --exclude "*test*,*spec*" --dry-run
 ```
 
-**Docker Features:**
-- ✅ **Published Images**: Pre-built images available on GitHub Container Registry
-- ✅ **No local Python installation required**
-- ✅ **Automatic config file detection in template directory**
-- ✅ **Interactive confirmation prompts work correctly**
-- ✅ **Easy CI/CD integration with published images**
+**Verbose output with warnings:**
+```bash
+# See detailed processing information and missing value warnings
+customizer process --project ./template --config ./config.yml --verbose --dry-run
+```
+
+**Batch processing:**
+```bash
+# Process without interactive prompts
+customizer process --project ./template --config ./config.yml --yes
+```
+
+## Features
+
+- **Comment-based markers** - Templates remain fully functional and compileable
+- **Multi-language support** - Python, JavaScript, TypeScript, YAML, HTML, CSS, Docker, and more
+- **Rich CLI output** - Progress bars, colored output, and detailed previews
+- **Dry-run mode** - Preview changes before applying
+- **Safe processing** - Automatic backups and validation
+- **Missing value warnings** - Clear warnings for undefined configuration values
+- **Flexible filtering** - Include/exclude patterns for selective processing
+- **Docker support** - Pre-built images for deployment and CI/CD integration
 
 ## Template Marker Format
 
-Template markers follow this pattern:
-```
+Template markers use comment syntax that preserves functionality:
+
+```python
 # variable_name = {{ jinja2_expression }}
 actual_value = "default_value"
 ```
 
+**Supported file types and comment syntax:**
+- Python/Shell: `# marker = {{ expr }}`
+- JavaScript/TypeScript: `// marker = {{ expr }}`
+- CSS/SCSS: `/* marker = {{ expr }} */`
+- HTML/XML: `<!-- marker = {{ expr }} -->`
+- YAML: `# marker = {{ expr }}`
+- Dockerfile: `# marker = {{ expr }}`
+
 The tool will:
 1. Find the comment line with the marker
 2. Render the Jinja2 expression using your config values
-3. Replace the next line with the rendered result
+3. Replace the following line with the rendered result
 4. Preserve the comment line unchanged
 
-## Configuration File
+## Configuration
 
-Supports both YAML and JSON formats:
+Configuration files support both YAML and JSON formats with nested structure:
 
 ```yaml
 project:
@@ -194,87 +152,64 @@ project:
 database:
   host: "localhost"
   port: 5432
-
+  
 features:
   auth_enabled: true
   metrics_enabled: false
+  
+docker:
+  registry: "ghcr.io"
+  image_name: "myapp"
 ```
 
-Access nested values in templates:
+Access nested values in templates using dot notation:
+
 ```python
 # db_host = {{ values.database.host | quote }}
 db_host = "localhost"
 
 # app_name = {{ values.project.name | quote }}
 app_name = "MyApp"
+
+# port = {{ values.database.port }}
+port = 5432
+
+# registry = {{ values.docker.registry | quote }}
+registry = "ghcr.io"
 ```
 
-## Development
+## Missing Values Handling
 
-### VS Code Dev Container (Recommended)
-
-This project includes a complete VS Code dev container setup with all tools pre-configured:
+Template Customizer gracefully handles missing configuration values:
 
 ```bash
-# Open in VS Code with dev container extension installed
-code .
-# VS Code will prompt to "Reopen in Container"
+⚠ Warning: docker-compose.yml has 3 missing values:
+  Line 5: web_image - Missing value 'values.docker.web_image': 'dict object' has no attribute 'docker'
+  Line 8: api_port - Missing value 'values.docker.api_port': 'dict object' has no attribute 'docker'
+  Line 12: debug_mode - Missing value 'values.environment.debug': 'dict object' has no attribute 'environment'
+
+✓ Found 7 changes in 4 files
+ℹ Processed 2 files with warnings
 ```
 
-The dev container includes:
-- Python 3.12 with uv package manager
-- All development dependencies pre-installed
-- Claude Code integration for AI-assisted development
-- Modern CLI tools (ripgrep, fd, bat, fzf)
-- Automatic environment setup
+Files with missing values are still copied to the output directory, allowing you to incrementally build your configuration.
 
-### Manual Development Setup
+## Documentation
 
-```bash
-# Install development dependencies
-uv pip install -e ".[dev]"
+- **[Usage Guide](docs/USAGE.md)** - Detailed examples and advanced usage
+- **[Development Guide](docs/DEVELOPMENT.md)** - Contributing and development setup
+- **[API Documentation](docs/)** - Complete API reference
 
-# Run tests
-pytest
+## Getting Help
 
-# Run linting and formatting
-ruff check .
-black .
-
-# Type checking
-mypy src/
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=template_customizer --cov-report=html
-
-# Run specific test file
-pytest tests/test_comment_parser.py -v
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Add tests for new functionality
-5. Run the test suite (`pytest`)
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
+- **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/mkuhl/customizer/issues)
+- **Discussions**: For questions and community support
+- **Examples**: Check the `examples/` directory for template samples
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-## Support
+---
 
-- **Documentation**: See [USAGE.md](USAGE.md) for detailed usage examples
-- **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/mkuhl/customizer/issues)
-- **Development**: See [CLAUDE.md](CLAUDE.md) for development guidelines
+Template Customizer uses comment-based markers that preserve your template's functionality, unlike traditional templating tools that use placeholder variables and break compilation. Your templates remain fully functional during development and can be customized without breaking the build process.
