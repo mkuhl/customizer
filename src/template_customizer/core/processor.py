@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import yaml
 from jinja2 import BaseLoader, Environment, TemplateError, UndefinedError
@@ -91,26 +91,34 @@ class TemplateProcessor:
                 f"Error rendering template '{template_expression}': {e}"
             ) from e
 
-    def process_markers(self, markers: List[TemplateMarker]) -> List[tuple]:
+    def process_markers(
+        self, markers: List[TemplateMarker]
+    ) -> Tuple[List[tuple], List[tuple]]:
         """Process template markers and generate replacement values.
 
         Args:
             markers: List of template markers to process
 
         Returns:
-            List of tuples (marker, rendered_value)
+            Tuple of (successful_results, errors) where:
+            - successful_results: List of tuples (marker, rendered_value)
+            - errors: List of tuples (marker, error_message)
         """
         results = []
+        errors = []
 
         for marker in markers:
             try:
                 rendered_value = self.render_template(marker.template_expression)
                 results.append((marker, rendered_value))
             except TemplateError as e:
-                # For now, continue with other markers and collect errors
-                results.append((marker, f"ERROR: {e}"))
+                # Collect errors separately for reporting
+                error_msg = str(e).replace(
+                    "Undefined variable in template", "Missing value"
+                )
+                errors.append((marker, error_msg))
 
-        return results
+        return results, errors
 
     def _quote_filter(self, value: Any) -> str:
         """Custom Jinja2 filter to add quotes around string values."""

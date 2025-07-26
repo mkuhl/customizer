@@ -55,9 +55,8 @@ class FileWriter:
         changes = []
 
         for marker, rendered_value in markers_and_values:
-            if rendered_value.startswith("ERROR:"):
-                # Skip markers that failed to render
-                continue
+            # Process all markers, even if they had errors
+            # (errors are now handled separately)
 
             target_line_idx = marker.target_line_number
 

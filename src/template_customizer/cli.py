@@ -224,6 +224,7 @@ def process(
         all_changes = []
         processed_files = 0
         skipped_files = 0
+        files_to_copy = set()  # Track all files that need to be copied
 
         with Progress(
             SpinnerColumn(),
@@ -274,22 +275,29 @@ def process(
                             f"(no template markers)"
                         )
 
-                    # If output directory is specified, still copy the file
-                    # even without markers
-                    if output and not dry_run:
-                        rel_path = file_path.relative_to(project)
-                        target_path = output / rel_path
-                        target_path.parent.mkdir(parents=True, exist_ok=True)
-                        import shutil
-
-                        shutil.copy2(file_path, target_path)
+                    # If output directory is specified, track file for copying
+                    if output:
+                        files_to_copy.add(file_path)
 
                     progress.advance(process_task)
                     continue
 
                 # Process markers
                 try:
-                    markers_and_values = processor.process_markers(markers)
+                    result = processor.process_markers(markers)
+                    markers_and_values, marker_errors = result
+
+                    # Display warnings for missing markers
+                    if marker_errors:
+                        console.print(
+                            f"[yellow]⚠ Warning:[/yellow] {file_path.name} has "
+                            f"{len(marker_errors)} missing values:"
+                        )
+                        for marker, error_msg in marker_errors:
+                            console.print(
+                                f"  [yellow]Line {marker.line_number + 1}:[/yellow] "
+                                f"{marker.variable_name} - {error_msg}"
+                            )
 
                     # Determine target file path
                     if output:
@@ -319,11 +327,28 @@ def process(
                         all_changes.extend(changes)
                         processed_files += 1
 
+                        # Track file for copying
+                        if output:
+                            files_to_copy.add(file_path)
+
                         if verbose:
                             console.print(
                                 f"[green]Processed:[/green] {file_path} "
                                 f"({len(changes)} changes)"
                             )
+                    else:
+                        # No changes but file has markers (possibly all failed)
+                        if markers_and_values or marker_errors:
+                            processed_files += 1
+                            if verbose:
+                                console.print(
+                                    f"[yellow]Processed:[/yellow] {file_path} "
+                                    f"(0 changes, {len(marker_errors)} errors)"
+                                )
+
+                            # Track file for copying
+                            if output:
+                                files_to_copy.add(file_path)
 
                 except Exception as e:
                     console.print(f"[red]Error processing {file_path}:[/red] {e}")
@@ -334,7 +359,7 @@ def process(
         _show_results(all_changes, processed_files, skipped_files, dry_run, verbose)
 
         # Apply changes if not dry run
-        if not dry_run and all_changes:
+        if not dry_run and (all_changes or (output and files_to_copy)):
             should_apply = yes or click.confirm("Apply these changes?")
             if should_apply:
                 # If output directory is specified, copy files first
@@ -349,16 +374,8 @@ def process(
                             "Copying files to output directory...", total=None
                         )
 
-                        # Get unique source files from changes
-                        source_files = set()
-                        for change in all_changes:
-                            # Get the original source file
-                            rel_path = change.file_path.relative_to(output)
-                            source_file = project / rel_path
-                            source_files.add(source_file)
-
-                        # Copy files to output directory
-                        for source_file in source_files:
+                        # Copy all tracked files to output directory
+                        for source_file in files_to_copy:
                             rel_path = source_file.relative_to(project)
                             target_file = output / rel_path
 
