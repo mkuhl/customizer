@@ -337,6 +337,7 @@ jobs:
         ## 📦 What's Included
         
         - **\`customizer\`** - Standalone script that automatically pulls and runs \`ghcr.io/mkuhl/customizer:${VERSION}\`
+        - **\`docs/ai-agents.md\`** - AI agent integration guide for automated workflows
         - **No installation required** - Just download, make executable, and run
         - **Docker-based** - Consistent environment across all platforms
         
@@ -355,7 +356,8 @@ jobs:
         
         ## 📚 Documentation
         
-        - **Usage Guide**: See [USAGE.md](https://github.com/mkuhl/customizer/blob/master/USAGE.md)
+        - **Usage Guide**: See [USAGE.md](https://github.com/mkuhl/customizer/blob/master/docs/USAGE.md)
+        - **AI Agent Integration**: See [ai-agents.md](https://github.com/mkuhl/customizer/releases/download/${{ steps.version.outputs.tag }}/ai-agents.md) (included in release)
         - **Development**: See [CLAUDE.md](https://github.com/mkuhl/customizer/blob/master/CLAUDE.md)
         - **Repository**: https://github.com/mkuhl/customizer
         
@@ -383,3 +385,4 @@ jobs:
         generate_release_notes: false
         files: |
           customizer
+          docs/ai-agents.md
