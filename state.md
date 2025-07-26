@@ -1,7 +1,7 @@
 # Template Customizer - Project State
 
 ## Last Updated
-2025-06-15
+2025-07-26
 
 ## Project Overview
 - **Project**: Template Customizer - standalone Python tool for customizing project templates
@@ -10,13 +10,40 @@
 - **Package Manager**: uv
 - **Repository**: https://github.com/mkuhl/customizer
 - **CI Status**: ✅ All checks passing
+- **Latest Version**: v0.1.4 (2025-07-26)
+- **Docker Images**: `ghcr.io/mkuhl/customizer:0.1.4`, `ghcr.io/mkuhl/customizer:latest`
 
 ## Current Session Major Accomplishments
 
-### 🚀 GitHub Container Registry (GHCR) Publishing & Release Automation 
+### 🚀 Missing Values Handling & Documentation Reorganization (2025-07-26)
 **Status: ✅ COMPLETE and OPERATIONAL**
 
-This session focused on implementing automated Docker publishing to GHCR and GitHub Releases integration:
+This session focused on implementing enhanced error handling for missing template values and reorganizing project documentation:
+
+#### **1. Enhanced Missing Values Handling**
+- **Per-file Warnings**: Added detailed warnings showing missing configuration values with line numbers
+- **Graceful Copying**: Files with missing markers are now copied to output directory regardless of errors
+- **User Experience**: Clear error messages help users incrementally build configurations
+- **Template Processing**: Modified processor to separate successful renders from errors
+- **CLI Improvements**: Enhanced CLI output with rich warning displays
+
+#### **2. Documentation Reorganization**
+- **Professional README**: Completely rewrote README.md with Docker-first approach and professional tone
+- **Docs Directory**: Created `docs/` directory with organized documentation structure
+- **Development Guide**: Moved all development content to `docs/DEVELOPMENT.md`
+- **Usage Guide**: Relocated `USAGE.md` to `docs/USAGE.md`
+- **Quickstart Focus**: Emphasized standalone script installation using GitHub releases
+
+#### **3. Version 0.1.4 Release**
+- **Version Bump**: Updated from 0.1.3 to 0.1.4
+- **Release Automation**: Successfully triggered automated release with tag `v0.1.4`
+- **Docker Images**: Published new images to `ghcr.io/mkuhl/customizer:0.1.4` and `:latest`
+- **Standalone Script**: Generated new customizer wrapper script for v0.1.4
+
+### 📋 Previous Session: GitHub Container Registry (GHCR) Publishing & Release Automation 
+**Status: ✅ COMPLETE and OPERATIONAL**
+
+Previous session focused on implementing automated Docker publishing to GHCR and GitHub Releases integration:
 
 #### **1. GHCR Docker Publishing Workflow**
 - **Automated CI Publishing**: New `docker-publish` job publishes to `ghcr.io/mkuhl/customizer`
@@ -104,7 +131,8 @@ Previous session implemented comprehensive CI/CD pipeline with GitHub Actions:
 - ✅ **Template Engine**: Jinja2 integration with marker processing
 - ✅ **Configuration**: YAML/JSON parameter loading
 - ✅ **Safety Features**: Dry-run mode, backups, validation
-- ✅ **Testing**: Comprehensive test suite (82 tests, 77% coverage)
+- ✅ **Testing**: Comprehensive test suite (82 tests, 79% coverage)
+- ✅ **Error Handling**: Missing values warnings and graceful file copying
 
 #### **Supported File Types**
 - Python (`.py`) - `# marker = {{ expression }}`
@@ -116,8 +144,8 @@ Previous session implemented comprehensive CI/CD pipeline with GitHub Actions:
 
 ### 🧪 Testing & Quality Metrics
 
-#### **Test Coverage Results** (Latest Run)
-- **Total Coverage**: 77.43% (exceeds 50% minimum threshold)
+#### **Test Coverage Results** (Latest Run - 2025-07-26)
+- **Total Coverage**: 79% (exceeds 50% minimum threshold)
 - **Total Tests**: 82 tests passing
 - **Key Modules**:
   - `parser.py`: 96% coverage - Template marker extraction
@@ -125,7 +153,7 @@ Previous session implemented comprehensive CI/CD pipeline with GitHub Actions:
   - `file_types.py`: 89% coverage - File type detection
   - `version_bump.py`: 88% coverage - Version management
   - `writer.py`: 79% coverage - Safe file writing with backups
-  - `processor.py`: 75% coverage - Template rendering and processing
+  - `processor.py`: 76% coverage - Template rendering and processing (enhanced with error handling)
 
 #### **Quality Assurance**
 - **Ruff**: ✅ All linting rules pass
@@ -136,22 +164,18 @@ Previous session implemented comprehensive CI/CD pipeline with GitHub Actions:
 ### 🔄 Git Repository State
 
 #### **Branch Status**
-- **Current Branch**: `feature-ci-workflow`
-- **Main Branch**: `master` (ready for PR merge)
-- **PR Status**: Open - "Add GitHub Actions CI workflow" (#1)
+- **Current Branch**: `master`
+- **Main Branch**: `master` (active development)
+- **Latest Release**: v0.1.4 (2025-07-26)
 - **CI Status**: ✅ All checks passing on latest commit
 
-#### **Recent Commits Summary**
+#### **Recent Commits Summary** (Latest Session)
 ```
-711a928 Fix Docker build in GitHub Actions by adding Python/uv setup
-12d8237 Fix import sorting issues introduced by type annotations  
-8bc9bf9 Fix mypy type checking errors
-50d5a8d Apply black code formatting to source files
-a0e8db9 Limit ruff and black checks to src/ directory only
-b727e75 Fix all remaining ruff linting errors
-f79d958 Fix CI workflow issues
-933d666 Exclude tests from linting and formatting checks
-4dc0648 Add GitHub Actions CI workflow
+b6085f8 Reorganize documentation and bump version to 0.1.4
+d1e9dbb Display warnings for missing template markers and copy all files
+55b3460 Bump version to 0.1.3
+ebc581b Fix CI workflow to trigger on version tags
+355306d Bump version to 0.1.2
 ```
 
 ### 🛠️ Development Environment
@@ -171,22 +195,22 @@ f79d958 Fix CI workflow issues
 
 ## Current Session Summary
 
-### 🎯 Session Accomplishments (2025-06-15)
-1. ✅ **GHCR Publishing Workflow**: Successfully implemented automated Docker image publishing to GitHub Container Registry
-2. ✅ **PR #2 Merged**: GHCR publishing workflow merged and operational on master branch
-3. ✅ **Docker Images Published**: Images available at `ghcr.io/mkuhl/customizer` with proper tagging
-4. ✅ **Manual Publishing Script**: Created `./scripts/docker-publish.sh` for manual image publishing
-5. ✅ **GitHub Releases Automation**: Implemented automated release creation with version tags
-6. ✅ **Standalone Customizer Script**: Created version-specific wrapper script for easy distribution
-7. ✅ **Professional Release Experience**: Single-file release strategy with comprehensive documentation
-8. ✅ **Public Image Access**: Docker images successfully made public and accessible without authentication
+### 🎯 Session Accomplishments (2025-07-26)
+1. ✅ **Missing Values Handling**: Implemented per-file warnings for missing configuration values with line numbers
+2. ✅ **Enhanced File Copying**: Files with missing markers are now copied to output directory regardless of errors
+3. ✅ **Documentation Reorganization**: Completely restructured documentation with professional README and docs/ directory
+4. ✅ **Docker-First Approach**: Emphasized Docker usage as preferred method with clear quickstart instructions
+5. ✅ **Version 0.1.4 Release**: Successfully released v0.1.4 with enhanced error handling and new documentation
+6. ✅ **Improved User Experience**: Better error messages and incremental configuration building support
+7. ✅ **Professional Presentation**: Toned down marketing language for more professional documentation
+8. ✅ **GitHub CLI Integration**: Set up GitHub CLI for monitoring CI/CD pipeline and releases
 
 ## Next Recommended Actions
 
 ### 🎯 Immediate (High Priority)
-1. **First Release**: Create v0.1.1 tag to test automated release workflow
-2. **Release Validation**: Verify customizer script generation and GitHub Release creation
-3. **User Testing**: Test the end-to-end user experience with published Docker images
+1. **Feature Development**: Continue enhancing template processing capabilities
+2. **Performance Optimization**: Optimize processing for large template directories
+3. **User Feedback**: Gather feedback on new missing values handling and documentation structure
 
 ### 📈 Future Enhancements (Medium Priority)
 1. **Type Safety**: Complete mypy coverage for excluded core modules
@@ -250,6 +274,6 @@ The Template Customizer has successfully reached enterprise maturity with:
 - ✅ **Professional documentation** - Comprehensive README, usage guides, development docs
 - ✅ **Public accessibility** - Docker images available without authentication
 
-**Current Status**: Ready for first automated release (v0.1.1) and enterprise distribution.
+**Current Status**: v0.1.4 released with enhanced error handling and professional documentation.
 
-The Template Customizer has successfully evolved from initial development to an enterprise-ready tool with complete automation for building, testing, publishing, and releasing.
+The Template Customizer has successfully evolved to include graceful error handling for missing configuration values and a complete documentation restructure emphasizing Docker-first usage.

@@ -139,7 +139,7 @@ Use the py-ang project as validation target by:
 - **Docker Build**: Automated Docker image building and testing with dynamic versioning
 - **Docker Publish**: Automated publishing to GitHub Container Registry (GHCR) at `ghcr.io/mkuhl/customizer`
 - **Release Automation**: Automated GitHub Releases with standalone customizer script on version tags
-- **Coverage**: Minimum 50% test coverage required (currently 77%+)
+- **Coverage**: Minimum 50% test coverage required (currently 79%+)
 - **MyPy Configuration**: Pragmatic settings for CI compatibility (some modules excluded temporarily)
 - **Status**: ✅ All checks passing on master branch
 
