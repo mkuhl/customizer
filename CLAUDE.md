@@ -119,7 +119,24 @@ Use the py-ang project as validation target by:
 - **rich**: Beautiful terminal output
 - **pathlib**: File system operations (built-in)
 
-## Framework and Library Documentation
+## IDE Integration and Tools
+
+### IntelliJ MCP Server
+- **IntelliJ MCP Integration**: ✅ Fully configured and operational
+- **Preferred Tool Usage**: Always use IntelliJ MCP tools when available for better IDE integration
+- **Key MCP Tools to Use**:
+  - `mcp__jetbrains__get_file_text_by_path`: Read files (prefer over basic Read tool)
+  - `mcp__jetbrains__search_in_files_by_text`: Search codebase (faster than grep)
+  - `mcp__jetbrains__list_directory_tree`: Explore project structure
+  - `mcp__jetbrains__get_project_problems`: Check for issues/errors
+  - `mcp__jetbrains__replace_text_in_file`: Edit files with IDE awareness
+  - `mcp__jetbrains__reformat_file`: Apply code formatting
+  - `mcp__jetbrains__rename_refactoring`: Safe symbol renaming
+  - `mcp__jetbrains__execute_terminal_command`: Run commands in IDE terminal
+- **When to Use MCP**: Prefer MCP tools for all file operations, searches, and code analysis when working in the IDE environment
+- **Fallback**: Use standard tools only when MCP equivalent is not available
+
+### Framework and Library Documentation
 - **ALWAYS use Context7** when working with frameworks, libraries, or external packages
 - When implementing features using Click, Rich, Jinja2, or any other dependency, append "use context7" to get the latest documentation
 - This ensures code examples and API usage are current and accurate

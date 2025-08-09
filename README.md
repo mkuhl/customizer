@@ -1,10 +1,55 @@
 # Template Customizer
 
 [![CI](https://github.com/mkuhl/customizer/actions/workflows/ci.yml/badge.svg)](https://github.com/mkuhl/customizer/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/version-0.1.6-blue.svg)](https://github.com/mkuhl/customizer/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue.svg)](https://github.com/mkuhl/customizer/pkgs/container/customizer)
 
 A powerful tool for customizing project templates using comment-based markers while keeping templates fully functional and compileable.
+
+## What is Template Customizer?
+
+Template Customizer transforms project templates into customized, ready-to-use projects by replacing marker comments with configuration values. Unlike traditional templating tools that break your code with placeholder variables, Template Customizer uses comments to mark customization points, keeping your templates **fully functional** during development.
+
+## Why Use Template Customizer?
+
+✅ **Templates Stay Functional** - Your template code runs and compiles during development  
+✅ **IDE-Friendly** - No syntax errors from placeholder variables  
+✅ **Version Control Friendly** - Clean diffs, reviewable code  
+✅ **Multi-Language Support** - Works with Python, JavaScript, YAML, Docker, and more  
+✅ **Safe Processing** - Dry-run mode, automatic backups, validation  
+✅ **Clear Warnings** - Missing configuration values are clearly reported  
+
+## How It Works
+
+**Before** (template file):
+```python
+# app_name = {{ values.project.name | quote }}
+app_name = "DefaultApp"
+
+# port = {{ values.server.port }}
+port = 3000
+```
+
+**Configuration** (config.yml):
+```yaml
+project:
+  name: "MyAwesomeApp"
+server:
+  port: 8080
+```
+
+**After** (customized file):
+```python
+# app_name = {{ values.project.name | quote }}
+app_name = "MyAwesomeApp"
+
+# port = {{ values.server.port }}
+port = 8080
+```
+
+The comment markers are preserved, and only the values are updated!
 
 ## Quick Start
 
@@ -23,7 +68,10 @@ customizer --version
 **Docker usage:**
 
 ```bash
-# Run with Docker
+# Run with Docker (recommended)
+docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:0.1.6 process --dry-run
+
+# Or use 'latest' for the most recent version
 docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest process --dry-run
 ```
 
@@ -104,6 +152,15 @@ customizer process --project ./template --config ./config.yml --verbose --dry-ru
 # Process without interactive prompts
 customizer process --project ./template --config ./config.yml --yes
 ```
+
+## Common Use Cases
+
+- **🚀 Project Scaffolding** - Initialize new projects from company templates
+- **🔧 Environment Configuration** - Deploy same codebase to dev/staging/prod
+- **🏢 Multi-Tenant Applications** - Configure for different clients/tenants
+- **🐳 Docker Deployments** - Customize compose files for different environments
+- **📦 Package Templates** - Create npm/pip packages with correct metadata
+- **⚙️ CI/CD Pipelines** - Generate environment-specific configurations
 
 ## Features
 
@@ -206,10 +263,21 @@ Files with missing values are still copied to the output directory, allowing you
 - **Discussions**: For questions and community support
 - **Examples**: Check the `examples/` directory for template samples
 
+## Contributing
+
+We welcome contributions! Please see our [Development Guide](docs/DEVELOPMENT.md) for setup instructions and guidelines.
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-Template Customizer uses comment-based markers that preserve your template's functionality, unlike traditional templating tools that use placeholder variables and break compilation. Your templates remain fully functional during development and can be customized without breaking the build process.
+**💡 Key Innovation**: Template Customizer uses comment-based markers that preserve your template's functionality. Unlike traditional templating tools that break compilation with placeholder variables like `${APP_NAME}` or `{{app_name}}`, your templates remain **fully functional** during development. This means:
+
+- ✅ Your IDE won't show syntax errors
+- ✅ Your code compiles and runs during template development
+- ✅ Your tests pass before and after customization
+- ✅ Your templates are maintainable and debuggable
+
+Start using Template Customizer today and make your templates work **for** you, not against you!
