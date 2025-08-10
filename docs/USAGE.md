@@ -2,31 +2,78 @@
 
 ## Quick Start
 
-### Local Installation
+### 🚀 One-Liner Installation (Easiest!)
 
-Use the wrapper script to run the template customizer:
+The easiest way to install Template Customizer (~100ms startup):
 
 ```bash
+# Install with one command (to /usr/local/bin)
+curl -fsSL https://github.com/mkuhl/customizer/releases/latest/download/install.sh | sh
+
+# Install to custom directory (no sudo needed)
+curl -fsSL https://github.com/mkuhl/customizer/releases/latest/download/install.sh | sh -s -- --dir ~/.local/bin
+
+# Verify installation
+customizer --version
+```
+
+### 💾 Manual Installation
+
+If you prefer manual installation:
+
+```bash
+# Download and extract the native binary
+curl -L https://github.com/mkuhl/customizer/releases/latest/download/customizer-linux-x64.tar.gz | tar xz
+
+# Make it executable and move to PATH
+chmod +x customizer
+sudo mv customizer /usr/local/bin
+
 # Show help
-./customize --help
+./customizer --help
 
 # Show version information
-./customize version
+./customizer version
 
 # Show supported file types
-./customize info
+./customizer info
 
 # Preview changes (dry run)
-./customize process --project ./examples/test-project --config ./examples/config.yml --dry-run
+./customizer process --project ./examples/test-project --config ./examples/config.yml --dry-run
 
 # Apply changes
-./customize process --project ./examples/test-project --config ./examples/config.yml
+./customizer process --project ./examples/test-project --config ./examples/config.yml
 
-# 🆕 NEW: Auto-detect config file in project root
-./customize process --project ./examples/test-project --dry-run
+# Auto-detect config file in project root
+./customizer process --project ./examples/test-project --dry-run
 
-# 🆕 NEW: Apply changes without confirmation prompt (for CI/batch)
-./customize process --project ./examples/test-project --yes
+# Apply changes without confirmation prompt (for CI/batch)
+./customizer process --project ./examples/test-project --yes
+```
+
+### 🐳 Docker Wrapper Script
+
+Use when native binary isn't available or for cross-platform consistency:
+
+```bash
+# Download the Docker wrapper script
+curl -L -o run-docker-customizer.sh https://github.com/mkuhl/customizer/releases/latest/download/run-docker-customizer.sh
+chmod +x run-docker-customizer.sh
+
+# Show help
+./run-docker-customizer.sh --help
+
+# Show version information
+./run-docker-customizer.sh version
+
+# Show supported file types
+./run-docker-customizer.sh info
+
+# Preview changes (dry run)
+./run-docker-customizer.sh process --project ./examples/test-project --config ./examples/config.yml --dry-run
+
+# Apply changes
+./run-docker-customizer.sh process --project ./examples/test-project --config ./examples/config.yml
 ```
 
 ### Docker Usage 🐳
@@ -158,7 +205,7 @@ Ready to continue with **Phase 2: Comment Parser Engine** to enhance:
 When you don't specify a `--config` file, the tool automatically looks for configuration files in the project root:
 
 ```bash
-./customize process --project ./my-template --dry-run
+./customizer process --project ./my-template --dry-run
 # Output: ℹ Using config file: config.yml
 ```
 
@@ -172,7 +219,7 @@ When you don't specify a `--config` file, the tool automatically looks for confi
 Use the `--yes` flag to skip confirmation prompts, perfect for CI/CD pipelines:
 
 ```bash
-./customize process --project ./my-template --yes
+./customizer process --project ./my-template --yes
 # Applies changes immediately without asking "Apply these changes? [y/N]"
 ```
 
@@ -181,7 +228,7 @@ The template customizer includes comprehensive version management features:
 
 ```bash
 # Show detailed version information
-./customize version
+./customizer version
 ```
 
 **Version Features:**

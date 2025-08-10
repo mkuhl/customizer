@@ -4,8 +4,8 @@ set -e
 echo "🔧 Setting up Template Customizer development environment..."
 
 echo "🐳 Fixing Docker permissions..."
-sudo chown root:docker /var/run/docker.sock
-sudo chmod 660 /var/run/docker.sock
+#sudo chown root:docker /var/run/docker.sock
+#sudo chmod 660 /var/run/docker.sock
 
 echo "🔑 Fixing SSH permissions..."
 if [ -d "/home/vscode/.ssh" ]; then

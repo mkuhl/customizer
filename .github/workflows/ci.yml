@@ -177,6 +177,115 @@ jobs:
         name: docker-image
         path: template-customizer.tar.gz
 
+  native-linux:
+    name: Build Native Linux Binary
+    runs-on: ubuntu-latest
+    needs: [test, quality]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Cache uv packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/uv
+        key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+
+    - name: Install dependencies
+      run: |
+        uv pip install --system -e ".[dev]"
+        uv pip install --system pyinstaller
+
+    - name: Build native executable
+      run: |
+        echo "🔨 Building native Linux executable..."
+        pyinstaller \
+          --clean \
+          --distpath ./dist \
+          --workpath ./build \
+          template-customizer.spec
+        
+        echo "📦 Binary built successfully!"
+        ls -lh dist/
+
+    - name: Install UPX and compress
+      run: |
+        sudo apt-get update && sudo apt-get install -y upx
+        echo "📦 Original size: $(du -h dist/template-customizer | cut -f1)"
+        upx --best --lzma dist/template-customizer || true
+        echo "📦 Compressed size: $(du -h dist/template-customizer | cut -f1)"
+
+    - name: Test native binary
+      run: |
+        echo "🧪 Testing native binary..."
+        
+        # Version check
+        ./dist/customizer --version
+        
+        # Help output
+        ./dist/customizer --help
+        
+        # Info command
+        ./dist/customizer info
+        
+        # Create test project
+        mkdir -p test-template
+        cat > test-template/config.py << 'EOF'
+        # version = {{ values.version }}
+        version = '1.0.0'
+        # name = {{ values.name | quote }}
+        name = 'default'
+        EOF
+        
+        cat > config.yml << 'EOF'
+        version: 2.0.0
+        name: TestApp
+        EOF
+        
+        # Test dry-run
+        ./dist/customizer process \
+          --project test-template \
+          --config config.yml \
+          --dry-run
+        
+        echo "✅ All tests passed!"
+
+    - name: Generate checksums
+      run: |
+        cd dist
+        sha256sum template-customizer > template-customizer.sha256
+        echo "📋 Checksum: $(cat template-customizer.sha256)"
+
+    - name: Create distribution archive
+      run: |
+        cd dist
+        tar -czf template-customizer-linux-x64.tar.gz \
+          template-customizer \
+          template-customizer.sha256
+        ls -lh *.tar.gz
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: template-customizer-linux-x64
+        path: |
+          dist/template-customizer
+          dist/template-customizer.sha256
+          dist/template-customizer-linux-x64.tar.gz
+
   docker-publish:
     name: Publish Docker Image to GHCR
     runs-on: ubuntu-latest
@@ -269,7 +378,7 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    needs: [test, quality, docker-publish]
+    needs: [test, quality, docker-publish, native-linux]
     permissions:
       contents: write
     
@@ -299,18 +408,38 @@ jobs:
         echo "📋 Tag: ${TAG_NAME}"
         echo "📦 Version: ${VERSION}"
         
-    - name: Generate customizer script
+    - name: Download native binary artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: customizer-linux-x64
+        path: ./native-binaries/
+
+    - name: Prepare release assets
       run: |
         VERSION="${{ steps.version.outputs.version }}"
-        echo "🔧 Generating customizer script for version ${VERSION}"
         
-        # Replace version placeholder in template
-        sed "s/__VERSION__/${VERSION}/g" scripts/customizer.template > customizer
-        chmod +x customizer
+        # Generate Docker wrapper script
+        echo "🔧 Generating Docker wrapper script for version ${VERSION}"
+        sed "s/__VERSION__/${VERSION}/g" scripts/run-docker-customizer.template > run-docker-customizer.sh
+        chmod +x run-docker-customizer.sh
         
         # Verify the generated script
-        echo "📋 Generated script preview:"
-        head -20 customizer
+        echo "📋 Generated Docker wrapper preview:"
+        head -20 run-docker-customizer.sh
+        
+        # Verify native binary
+        echo "📦 Native binary contents:"
+        ls -lh native-binaries/
+        
+        # Move and rename native binary for release
+        mv native-binaries/customizer-linux-x64.tar.gz .
+        
+        # Generate combined checksums file
+        echo "📋 Generating checksums..."
+        sha256sum scripts/install.sh > checksums.txt
+        sha256sum run-docker-customizer.sh >> checksums.txt
+        sha256sum customizer-linux-x64.tar.gz >> checksums.txt
+        cat checksums.txt
         
     - name: Generate release notes
       id: release_notes
@@ -322,24 +451,53 @@ jobs:
         
         ## 🚀 Quick Start
         
-        Download and run the Template Customizer with a single script:
+        ### 🚀 One-Liner Installation (Easiest!)
+        
+        Install Template Customizer with a single command:
         
         \`\`\`bash
-        # Download the customizer script
-        curl -L -o customizer https://github.com/mkuhl/customizer/releases/download/${{ steps.version.outputs.tag }}/customizer
-        chmod +x customizer
+        # Install to /usr/local/bin (requires sudo)
+        curl -fsSL https://github.com/mkuhl/customizer/releases/download/${{ steps.version.outputs.tag }}/install.sh | sh
         
-        # Use immediately
-        ./customizer --help
-        ./customizer process --dry-run
+        # Install to custom directory
+        curl -fsSL https://github.com/mkuhl/customizer/releases/download/${{ steps.version.outputs.tag }}/install.sh | sh -s -- --dir ~/.local/bin
+        
+        # Use immediately (startup time ~100ms)
+        customizer --help
+        customizer process --dry-run
+        \`\`\`
+        
+        ### 💾 Manual Installation
+        
+        If you prefer manual installation:
+        
+        \`\`\`bash
+        # Download and extract native binary
+        curl -L https://github.com/mkuhl/customizer/releases/download/${{ steps.version.outputs.tag }}/customizer-linux-x64.tar.gz | tar xz
+        sudo mv customizer /usr/local/bin/
+        \`\`\`
+        
+        ### 🐳 Docker Wrapper Script
+        
+        Use our Docker wrapper for cross-platform support when native binary isn't available:
+        
+        \`\`\`bash
+        # Download the Docker wrapper script
+        curl -L -o run-docker-customizer.sh https://github.com/mkuhl/customizer/releases/download/${{ steps.version.outputs.tag }}/run-docker-customizer.sh
+        chmod +x run-docker-customizer.sh
+        
+        # Use (startup time 2-3s)
+        ./run-docker-customizer.sh --help
+        ./run-docker-customizer.sh process --dry-run
         \`\`\`
         
         ## 📦 What's Included
         
-        - **\`customizer\`** - Standalone script that automatically pulls and runs \`ghcr.io/mkuhl/customizer:${VERSION}\`
+        - **\`install.sh\`** - One-liner installation script for easy setup
+        - **\`customizer-linux-x64.tar.gz\`** - Native Linux binary (x86_64) - fast startup (~100ms), no Docker needed!
+        - **\`run-docker-customizer.sh\`** - Docker wrapper script that pulls and runs \`ghcr.io/mkuhl/customizer:${VERSION}\`
+        - **\`checksums.txt\`** - SHA256 checksums for all release assets
         - **\`docs/ai-agents.md\`** - AI agent integration guide for automated workflows
-        - **No installation required** - Just download, make executable, and run
-        - **Docker-based** - Consistent environment across all platforms
         
         ## 🐳 Docker Images
         
@@ -354,6 +512,14 @@ jobs:
         docker run --rm -v \$PWD:/workdir ghcr.io/mkuhl/customizer:${VERSION} process --dry-run
         \`\`\`
         
+        ## 📊 Performance Comparison
+        
+        | Method | Startup Time | Binary Size | Requirements |
+        |--------|-------------|-------------|--------------|
+        | Native Binary | ~100ms | ~40MB | Linux x86_64 |
+        | Docker Wrapper | 2-3s | N/A | Docker |
+        | Direct Docker | 2-3s | N/A | Docker |
+        
         ## 📚 Documentation
         
         - **Usage Guide**: See [USAGE.md](https://github.com/mkuhl/customizer/blob/master/docs/USAGE.md)
@@ -363,6 +529,11 @@ jobs:
         
         ## 🔧 Requirements
         
+        ### For Native Binary:
+        - Linux x86_64 (Ubuntu 20.04+, RHEL 8+, or compatible)
+        - GLIBC 2.31 or newer
+        
+        ### For Docker Version:
         - Docker installed and running
         - Internet connection for initial image download
         
@@ -384,5 +555,8 @@ jobs:
         prerelease: false
         generate_release_notes: false
         files: |
-          customizer
+          scripts/install.sh
+          run-docker-customizer.sh
+          customizer-linux-x64.tar.gz
+          checksums.txt
           docs/ai-agents.md

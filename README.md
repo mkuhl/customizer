@@ -53,27 +53,82 @@ The comment markers are preserved, and only the values are updated!
 
 ## Quick Start
 
-**Standalone script installation:**
+### 🚀 One-Liner Installation (Easiest!)
+
+Install Template Customizer with a single command:
 
 ```bash
-# Download and install the latest version
-curl -L https://github.com/mkuhl/customizer/releases/latest/download/customizer -o customizer
-chmod +x customizer
+# Install to /usr/local/bin (requires sudo)
+curl -fsSL https://github.com/mkuhl/customizer/releases/latest/download/install.sh | sh
+
+# Install to custom directory (no sudo needed)
+curl -fsSL https://github.com/mkuhl/customizer/releases/latest/download/install.sh | sh -s -- --dir ~/.local/bin
+
+# Use immediately (startup time ~100ms)
+customizer --version
+customizer process --dry-run
+```
+
+### 💾 Manual Installation
+
+If you prefer manual installation:
+
+```bash
+# Download and extract the native Linux binary
+curl -L https://github.com/mkuhl/customizer/releases/latest/download/customizer-linux-x64.tar.gz | tar xz
+
+# Move to system path
 sudo mv customizer /usr/local/bin/
 
-# Verify installation
+# Use immediately
 customizer --version
+customizer process --dry-run
 ```
 
-**Docker usage:**
+### 🐳 Docker Wrapper Script
+
+Cross-platform compatibility when native binary isn't available:
 
 ```bash
-# Run with Docker (recommended)
-docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:0.1.6 process --dry-run
+# Download the Docker wrapper script  
+curl -L -o run-docker-customizer.sh https://github.com/mkuhl/customizer/releases/latest/download/run-docker-customizer.sh
+chmod +x run-docker-customizer.sh
+sudo mv run-docker-customizer.sh /usr/local/bin/
 
-# Or use 'latest' for the most recent version
-docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest process --dry-run
+# Verify installation (pulls Docker image on first run)
+run-docker-customizer.sh --version
 ```
+
+### 🛠️ Direct Docker Usage
+
+For integration with existing Docker workflows:
+
+```bash
+# Run with Docker directly
+docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest process --dry-run
+
+# Or use a specific version
+docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:0.1.6 process --dry-run
+```
+
+## Installation Comparison
+
+| Method | Startup Time | Size | Requirements | Best For |
+|--------|-------------|------|--------------|----------|
+| **One-Liner Install** | ~100ms ⚡ | 11MB | Linux x86_64, GLIBC 2.31+ | Easiest setup, recommended for most users |
+| **Manual Binary** | ~100ms ⚡ | 11MB | Linux x86_64, GLIBC 2.31+ | CI/CD pipelines, controlled environments |
+| **Docker Wrapper** | 2-3s | N/A | Docker installed | Cross-platform consistency |
+| **Direct Docker** | 2-3s | N/A | Docker installed | Integration with existing Docker workflows |
+
+### System Requirements
+
+**For Native Binary:**
+- Linux x86_64 (Ubuntu 20.04+, RHEL 8+, Debian 11+, or compatible)
+- GLIBC 2.31 or newer (check with `ldd --version`)
+
+**For Docker Options:**
+- Docker installed and running
+- Internet connection for initial image download
 
 ## Usage Examples
 

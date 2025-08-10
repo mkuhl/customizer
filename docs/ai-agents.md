@@ -5,16 +5,62 @@
 **OPTIMIZATION**: Structured as executable decision trees with validation checkpoints for deterministic execution.
 
 **VERSION**: 0.1.6
-**CONTAINER**: ghcr.io/mkuhl/customizer:latest
-**STANDALONE**: https://github.com/mkuhl/customizer/releases/latest/download/customizer
+**NATIVE BINARY**: https://github.com/mkuhl/customizer/releases/latest/download/customizer-linux-x64.tar.gz
+**METHOD**: Native Linux executable (primary) with Docker fallback (legacy)
+
+## INSTALLATION
+
+### One-Liner Installation (Recommended - Fast ~100ms Startup)
+
+```bash
+# Install with single command
+curl -fsSL https://github.com/mkuhl/customizer/releases/latest/download/install.sh | sh
+
+# Or install to custom directory
+curl -fsSL https://github.com/mkuhl/customizer/releases/latest/download/install.sh | sh -s -- --dir ~/.local/bin
+
+# Verify installation
+customizer --version
+```
+
+### Manual Installation (Alternative)
+
+```bash
+# Step 1: Download and extract
+curl -L https://github.com/mkuhl/customizer/releases/latest/download/customizer-linux-x64.tar.gz | tar xz
+
+# Step 2: Make executable and accessible
+chmod +x customizer
+sudo mv customizer /usr/local/bin/
+
+# Step 3: Verify installation
+customizer --version
+```
+
+### Installation Validation
+```bash
+# Verify customizer is available
+command -v customizer >/dev/null 2>&1 && echo "✓ Customizer available" || echo "✗ Installation failed"
+
+# Check version
+customizer --version 2>/dev/null && echo "✓ Working correctly" || echo "✗ Binary not functioning"
+
+# Test basic functionality
+customizer info >/dev/null 2>&1 && echo "✓ Core functions working" || echo "✗ Core functions failing"
+```
+
+### System Requirements
+- Linux x86_64 (Ubuntu 20.04+, RHEL 8+, Debian 11+, or compatible)
+- GLIBC 2.31 or newer (check with: `ldd --version`)
+- No Python, Docker, or other dependencies required
 
 ## TOOL_IDENTIFICATION
 
 **Purpose**: Batch customize project templates by processing comment-based markers with Jinja2 expressions
-**Container**: `ghcr.io/mkuhl/customizer:latest`
-**Method**: Docker-only execution via container (or standalone script as fallback)
+**Executable**: Native Linux binary `customizer`  
 **Input**: Template directory + YAML/JSON configuration
 **Output**: Customized project directory with all markers replaced
+**Performance**: ~100ms startup time, 11MB binary size
 
 ## DETECTION_PATTERNS
 
@@ -33,7 +79,7 @@ FILES_WITH_MARKERS=$(grep -rl "{{ values\." . 2>/dev/null)
 ### Pattern Recognition Triggers
 ```
 User says: "customize template" → CHECK_FOR_MARKERS
-User says: "initialize from template" → CHECK_FOR_MARKERS
+User says: "initialize from template" → CHECK_FOR_MARKERS  
 User says: "configure project" → CHECK_FOR_MARKERS
 Directory contains: "template/", "scaffold/", "boilerplate/" → CHECK_FOR_MARKERS
 Files contain: "{{ values." pattern → USE_CUSTOMIZER
@@ -46,7 +92,7 @@ Config files present: "customizer-config.yml", "template.yml" → CHECK_FOR_MARK
 START
 ├─ DETECT: grep -r "{{ values\." . 2>/dev/null | head -1
 │  ├─ MARKERS_FOUND
-│  │  ├─ CONFIG_EXISTS: test -f config.yml || test -f customizer-config.yml
+│  │  ├─ CONFIG_EXISTS: test -f config.yml || test -f customizer-config.yml  
 │  │  │  ├─ YES → EXECUTE_CUSTOMIZATION
 │  │  │  └─ NO → GENERATE_CONFIG → EXECUTE_CUSTOMIZATION
 │  │  └─ 
@@ -58,7 +104,7 @@ START
 └─
 ```
 
-### Decision Logic Commands
+### Decision Logic Commands  
 ```bash
 # Check for markers
 HAS_MARKERS=$(grep -r "{{ values\." . 2>/dev/null | head -1 && echo "true" || echo "false")
@@ -100,7 +146,7 @@ REQUIRED_KEYS=$(grep -rh "{{ values\." . 2>/dev/null | \
     tr '.' '\n' | \
     sort -u)
 
-# Extract with file context for better understanding
+# Extract with file context for better understanding  
 grep -rn "{{ values\." . 2>/dev/null | \
     sed 's/:.*{{ values\.\([^}|]*\).*/: \1/' | \
     sort -u > required_config_map.txt
@@ -188,19 +234,6 @@ except:
 }
 ```
 
-## PREREQUISITES_VERIFICATION
-
-```bash
-# Verify Docker available
-docker --version
-
-# Verify target directory structure
-ls -la /path/to/template/directory
-
-# Verify configuration file exists
-cat /path/to/config.yml
-```
-
 ## COMMAND_PATTERNS
 
 ### Pattern 1: Standard Execution (markers exist, config exists)
@@ -209,17 +242,11 @@ cat /path/to/config.yml
 # Pre-check:
 test -f config.yml && grep -q "{{ values\." . || exit 1
 
-# Execute with Docker:
-docker run --rm \
-  -v "$(pwd):/workdir" \
-  ghcr.io/mkuhl/customizer:latest \
-  process --config config.yml --dry-run
+# Execute dry-run first:
+customizer process --config config.yml --dry-run
 
 # If dry-run looks good, execute:
-docker run --rm \
-  -v "$(pwd):/workdir" \
-  ghcr.io/mkuhl/customizer:latest \
-  process --config config.yml --yes
+customizer process --config config.yml --yes
 
 # Verify success:
 grep -r "{{ values\." . | wc -l  # Should return 0
@@ -249,7 +276,7 @@ done
 echo "ACTION_REQUIRED: Update placeholder values in config.yml"
 
 # Step 5: Execute after config updated
-docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest process --yes
+customizer process --yes
 ```
 
 ### Pattern 3: Add Markers to Existing Project
@@ -278,46 +305,65 @@ grep -rh "{{ values\." . | sed -n 's/.*{{ values\.\([^}|]*\).*/\1/p' | sort -u
 for env in dev staging prod; do
     echo "Processing $env environment..."
     
-    # Use environment-specific config
-    docker run --rm \
-        -v "$(pwd)/template:/workdir:ro" \
-        -v "$(pwd)/${env}-output:/output" \
-        -v "$(pwd)/configs/${env}.yml:/workdir/config.yml:ro" \
-        ghcr.io/mkuhl/customizer:latest \
-        process --output /output --yes
+    # Copy template to environment-specific directory
+    cp -r template/ "${env}-output/"
+    
+    # Apply environment-specific config
+    customizer process \
+        --project "${env}-output/" \
+        --config "configs/${env}.yml" \
+        --yes
     
     echo "✓ $env deployment ready in ${env}-output/"
 done
 ```
 
-### Pattern 5: Standalone Script Fallback (No Docker)
-```bash
-# Context: Docker not available, use standalone script
-# Download standalone customizer
-curl -L https://github.com/mkuhl/customizer/releases/latest/download/customizer -o customizer
-chmod +x customizer
-
-# Execute with standalone script
-./customizer process --project . --config config.yml --dry-run
-
-# Apply changes
-./customizer process --project . --config config.yml --yes
-```
-
-### Pattern 6: CI/CD Integration
+### Pattern 5: CI/CD Integration  
 ```bash
 # Context: GitHub Actions or other CI/CD pipeline
 # .github/workflows/customize.yml example
+- name: Install Template Customizer
+  run: |
+    curl -L https://github.com/mkuhl/customizer/releases/latest/download/customizer-linux-x64.tar.gz | tar xz
+    sudo mv customizer /usr/local/bin/
+    customizer --version
+
 - name: Customize Template
   run: |
-    docker run --rm \
-      -v "${{ github.workspace }}:/workdir" \
-      -v "${{ github.workspace }}/config-${{ matrix.env }}.yml:/workdir/config.yml:ro" \
-      ghcr.io/mkuhl/customizer:latest \
-      process --yes
+    customizer process \
+      --project . \
+      --config "config-${{ matrix.env }}.yml" \
+      --yes
     
     # Verify customization
     test $(grep -r "{{ values\." . | wc -l) -eq 0 || exit 1
+```
+
+### Pattern 6: Project Initialization from Template
+```bash
+# Context: Create new project from template
+PROJECT_NAME="$1"
+OUTPUT_DIR="$2"
+
+# Create configuration
+cat > temp_config.yml << EOF
+project:
+  name: "${PROJECT_NAME}"
+  version: "1.0.0"
+  description: "Generated from template"
+EOF
+
+# Copy template and customize
+cp -r template/ "${OUTPUT_DIR}/"
+customizer process \
+    --project "${OUTPUT_DIR}/" \
+    --config temp_config.yml \
+    --yes
+
+# Cleanup
+rm temp_config.yml
+
+echo "✓ Project '${PROJECT_NAME}' created in ${OUTPUT_DIR}/"
 ```
 
 ## TEMPLATE_MARKER_SYNTAX
@@ -390,44 +436,6 @@ docker:
 }
 ```
 
-## WORKFLOW_INTEGRATION_STEPS
-
-### Step 1: Identify Template Project
-```bash
-# Check for template markers
-grep -r "{{ " /path/to/template/ || echo "No markers found"
-```
-
-### Step 2: Create Configuration
-```bash
-# Create config based on found markers
-cat > config.yml << EOF
-project:
-  name: "$(basename $PWD)"
-  version: "1.0.0"
-EOF
-```
-
-### Step 3: Execute Customization
-```bash
-# Run customizer with proper mounts
-docker run --rm \
-  -v "$(pwd)/template:/input:ro" \
-  -v "$(pwd)/output:/output" \
-  -v "$(pwd)/config.yml:/config.yml:ro" \
-  ghcr.io/mkuhl/customizer:latest \
-  process --project /input --config /config.yml --output /output
-```
-
-### Step 4: Verify Results
-```bash
-# Check output directory structure
-ls -la output/
-
-# Verify customizations applied
-grep -r "MyProject" output/ || echo "Customization may have failed"
-```
-
 ## ERROR_HANDLING_PATTERNS
 
 ### Error Type 1: Missing Configuration Values
@@ -438,7 +446,7 @@ grep -r "MyProject" output/ || echo "Customization may have failed"
 #   Line 5: app_name - Missing value 'values.project.name'
 
 # DIAGNOSIS:
-missing_keys=$(docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest process --dry-run 2>&1 | \
+missing_keys=$(customizer process --dry-run 2>&1 | \
     grep "Missing value" | \
     sed -n "s/.*'values\.\([^']*\).*/\1/p" | \
     sort -u)
@@ -461,20 +469,20 @@ done
 echo "ACTION_REQUIRED: Update PLACEHOLDER values in config.yml"
 
 # Step 3: Retry customization
-docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest process --dry-run
+customizer process --dry-run
 
 # VALIDATION:
-test $(grep "Missing value" output.log | wc -l) -eq 0 && echo "✓ All values resolved"
+test $(grep "Missing value" output.log 2>/dev/null | wc -l) -eq 0 && echo "✓ All values resolved"
 ```
 
-### Error Type 2: Invalid Jinja2 Syntax
+### Error Type 2: Invalid Jinja2 Syntax  
 ```bash
 # SYMPTOM_PATTERN: "jinja2.exceptions|TemplateSyntaxError"
 # Example: jinja2.exceptions.TemplateSyntaxError: unexpected '}'
 
 # DIAGNOSIS:
 # Find files with invalid syntax
-invalid_files=$(docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest process --dry-run 2>&1 | \
+invalid_files=$(customizer process --dry-run 2>&1 | \
     grep -B2 "jinja2.exceptions" | \
     grep "Processing" | \
     awk '{print $2}')
@@ -508,39 +516,28 @@ with open('affected_file.py') as f:
 "
 ```
 
-### Error Type 3: Docker Not Available
+### Error Type 3: Binary Not Available
 ```bash
-# SYMPTOM_PATTERN: "docker: command not found|Cannot connect to Docker daemon"
+# SYMPTOM_PATTERN: "customizer: command not found"
 
 # DIAGNOSIS:
-docker_status=$(docker version 2>&1)
+customizer_status=$(customizer --version 2>&1)
 if [[ $? -ne 0 ]]; then
-    echo "Docker not available: $docker_status"
-    FALLBACK="USE_STANDALONE"
+    echo "Customizer not available: $customizer_status"
+    RECOVERY="INSTALL_BINARY"
 else
-    echo "Docker available"
-    FALLBACK="USE_DOCKER"
+    echo "Customizer available"
+    RECOVERY="NONE_NEEDED"
 fi
 
-# RECOVERY Option 1: Install Docker
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    echo "Install Docker with: curl -fsSL https://get.docker.com | sh"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "Install Docker Desktop from https://www.docker.com/products/docker-desktop"
-fi
-
-# RECOVERY Option 2: Use Standalone Script
-if [[ "$FALLBACK" == "USE_STANDALONE" ]]; then
-    # Download standalone customizer
-    curl -L https://github.com/mkuhl/customizer/releases/latest/download/customizer -o customizer
-    chmod +x customizer
-    
-    # Use standalone instead of Docker
-    ./customizer process --project . --config config.yml --dry-run
+# RECOVERY: Install Native Binary
+if [[ "$RECOVERY" == "INSTALL_BINARY" ]]; then
+    echo "Installing Template Customizer native binary..."
+    curl -fsSL https://github.com/mkuhl/customizer/releases/latest/download/install.sh | sh
 fi
 
 # VALIDATION:
-command -v docker >/dev/null 2>&1 && echo "✓ Docker available" || echo "✓ Using standalone"
+command -v customizer >/dev/null 2>&1 && echo "✓ Customizer available" || echo "✗ Installation failed"
 ```
 
 ### Error Type 4: Permission Denied
@@ -556,18 +553,11 @@ stat -c "%a %U:%G" .
 chmod -R 755 .
 chown -R $(whoami):$(whoami) .
 
-# For SELinux systems
-if command -v getenforce >/dev/null 2>&1 && [[ $(getenforce) != "Disabled" ]]; then
-    chcon -Rt svirt_sandbox_file_t .
-fi
-
 # Alternative: Use different output directory
 mkdir -p /tmp/customizer-output
-docker run --rm \
-    -v "$(pwd):/workdir:ro" \
-    -v "/tmp/customizer-output:/output" \
-    ghcr.io/mkuhl/customizer:latest \
-    process --output /output --yes
+cp -r . /tmp/customizer-output/
+cd /tmp/customizer-output/
+customizer process --config config.yml --yes
 
 # VALIDATION:
 test -w . && echo "✓ Directory writable" || echo "✗ Still not writable"
@@ -598,12 +588,10 @@ ls -la
 grep -r "{{" . --include="*.py" --include="*.js" | head -5
 
 # Try with verbose mode to see what's happening
-docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest \
-    process --verbose --dry-run
+customizer process --verbose --dry-run
 
 # VALIDATION:
-docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest \
-    process --dry-run 2>&1 | grep "Found.*changes"
+customizer process --dry-run 2>&1 | grep "Found.*changes"
 ```
 
 ## VALIDATION_SUITE
@@ -612,6 +600,15 @@ docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest \
 ```bash
 validate_prerequisites() {
     local ERRORS=0
+    
+    # Check for customizer binary
+    if ! command -v customizer >/dev/null 2>&1; then
+        echo "✗ ERROR: Customizer binary not found"
+        echo "Install with: curl -fsSL https://github.com/mkuhl/customizer/releases/latest/download/install.sh | sh"
+        ((ERRORS++))
+    else
+        echo "✓ Customizer binary available"
+    fi
     
     # Check for markers
     if ! grep -r "{{ values\." . >/dev/null 2>&1; then
@@ -627,13 +624,6 @@ validate_prerequisites() {
         ((ERRORS++))
     else
         echo "✓ Configuration file exists"
-    fi
-    
-    # Check Docker
-    if ! docker version >/dev/null 2>&1; then
-        echo "⚠ WARNING: Docker not available, will use standalone"
-    else
-        echo "✓ Docker available"
     fi
     
     # Check config completeness
@@ -708,38 +698,6 @@ validate_results() {
         fi
     fi
     
-    # Check: JSON validity (if JSON files exist)
-    if find "$OUTPUT_DIR" -name "*.json" | head -1 >/dev/null 2>&1; then
-        JSON_ERRORS=0
-        for json_file in $(find "$OUTPUT_DIR" -name "*.json"); do
-            if ! python3 -m json.tool "$json_file" >/dev/null 2>&1; then
-                echo "✗ ERROR: Invalid JSON in $json_file"
-                ((JSON_ERRORS++))
-            fi
-        done
-        if [[ "$JSON_ERRORS" -eq 0 ]]; then
-            echo "✓ JSON files valid"
-        else
-            ((ERRORS++))
-        fi
-    fi
-    
-    # Check: YAML validity (if YAML files exist)
-    if find "$OUTPUT_DIR" -name "*.yml" -o -name "*.yaml" | head -1 >/dev/null 2>&1; then
-        YAML_ERRORS=0
-        for yaml_file in $(find "$OUTPUT_DIR" \( -name "*.yml" -o -name "*.yaml" \)); do
-            if ! python3 -c "import yaml; yaml.safe_load(open('$yaml_file'))" 2>/dev/null; then
-                echo "✗ ERROR: Invalid YAML in $yaml_file"
-                ((YAML_ERRORS++))
-            fi
-        done
-        if [[ "$YAML_ERRORS" -eq 0 ]]; then
-            echo "✓ YAML files valid"
-        else
-            ((ERRORS++))
-        fi
-    fi
-    
     if [[ "$ERRORS" -eq 0 ]]; then
         echo "SUCCESS: All validations passed ✓"
         return 0
@@ -753,57 +711,13 @@ validate_results() {
 validate_results "." || { echo "Validation failed"; exit 1; }
 ```
 
-### Quick Validation Commands
-```bash
-# Check if customization is needed
-needs_customization() {
-    grep -r "{{ values\." . >/dev/null 2>&1
-}
-
-# Check if customization succeeded
-customization_complete() {
-    ! grep -r "{{ values\." . >/dev/null 2>&1
-}
-
-# Count files with markers
-files_with_markers() {
-    grep -rl "{{ values\." . 2>/dev/null | wc -l
-}
-
-# Count total markers
-total_markers() {
-    grep -r "{{ values\." . 2>/dev/null | wc -l
-}
-
-# List missing config keys
-missing_config_keys() {
-    grep -rh "{{ values\." . 2>/dev/null | \
-        sed -n 's/.*values\.\([^}|]*\).*/\1/p' | \
-        sort -u | \
-        while read key; do
-            python3 -c "
-import yaml, sys
-with open('config.yml') as f:
-    config = yaml.safe_load(f)
-keys = '$key'.split('.')
-current = config
-try:
-    for k in keys:
-        current = current[k]
-except:
-    print('$key')
-" 2>/dev/null
-        done
-}
-```
-
 ## COMMON_AUTOMATION_PATTERNS
 
 ### Pattern 1: Project Initialization
 ```bash
 #!/bin/bash
 TEMPLATE_DIR="$1"
-PROJECT_NAME="$2"
+PROJECT_NAME="$2"  
 OUTPUT_DIR="$3"
 
 # Create configuration
@@ -813,13 +727,12 @@ project:
   version: "1.0.0"
 EOF
 
-# Execute customization
-docker run --rm \
-  -v "${TEMPLATE_DIR}:/input:ro" \
-  -v "${OUTPUT_DIR}:/output" \
-  -v "$(pwd)/temp_config.yml:/config.yml:ro" \
-  ghcr.io/mkuhl/customizer:latest \
-  process --project /input --config /config.yml --output /output
+# Copy template and customize
+cp -r "${TEMPLATE_DIR}" "${OUTPUT_DIR}"
+customizer process \
+    --project "${OUTPUT_DIR}" \
+    --config temp_config.yml \
+    --yes
 
 # Cleanup
 rm temp_config.yml
@@ -829,12 +742,11 @@ rm temp_config.yml
 ```bash
 #!/bin/bash
 for env in dev staging prod; do
-  docker run --rm \
-    -v "$(pwd)/template:/input:ro" \
-    -v "$(pwd)/${env}-output:/output" \
-    -v "$(pwd)/configs/${env}.yml:/config.yml:ro" \
-    ghcr.io/mkuhl/customizer:latest \
-    process --project /input --config /config.yml --output /output
+  cp -r template/ "${env}-output/"
+  customizer process \
+    --project "${env}-output/" \
+    --config "configs/${env}.yml" \
+    --yes
 done
 ```
 
@@ -843,7 +755,7 @@ done
 ### When Creating New Projects:
 1. Use template project as base
 2. Generate configuration from user requirements
-3. Execute customizer via docker
+3. Execute customizer via native binary
 4. Verify output structure and content
 5. Proceed with project-specific modifications
 
@@ -861,84 +773,18 @@ mkdir -p project-output
 # 2. Create configuration
 echo "project: {name: 'NewProject'}" > config.yml
 
-# 3. Execute customization
-docker run --rm \
-  -v "/path/to/template:/input:ro" \
-  -v "$(pwd)/project-output:/output" \
-  -v "$(pwd)/config.yml:/config.yml:ro" \
-  ghcr.io/mkuhl/customizer:latest \
-  process --project /input --config /config.yml --output /output
+# 3. Copy template and customize
+cp -r template/ project-output/
+customizer process \
+    --project project-output/ \
+    --config config.yml \
+    --yes
 
 # 4. Verify and continue with project work
 cd project-output
 ```
 
 ## CONTEXT_RECOGNITION
-
-### Trigger Keywords in User Requests
-```bash
-# Keywords that suggest Template Customizer usage
-TEMPLATE_KEYWORDS="template|scaffold|boilerplate|customize|configure|initialize from|setup from|create from"
-ACTION_KEYWORDS="create project|new app|setup|initialize|configure|deploy"
-
-# Check user request for triggers
-check_user_intent() {
-    local USER_REQUEST="$1"
-    echo "$USER_REQUEST" | grep -iE "$TEMPLATE_KEYWORDS|$ACTION_KEYWORDS" >/dev/null 2>&1
-}
-```
-
-### Directory Pattern Recognition
-```bash
-# Indicators that suggest a template project
-is_template_directory() {
-    local DIR="${1:-.}"
-    
-    # Check for template directories
-    [[ -d "$DIR/template" || -d "$DIR/scaffold" || -d "$DIR/boilerplate" || -d "$DIR/archetype" ]] && {
-        echo "TEMPLATE_DIR_FOUND"
-        return 0
-    }
-    
-    # Check for template config files
-    [[ -f "$DIR/.template.yml" || -f "$DIR/template.config" || -f "$DIR/customizer-config.yml" ]] && {
-        echo "TEMPLATE_CONFIG_FOUND"
-        return 0
-    }
-    
-    # Check for multiple placeholder values (indicates template)
-    local PLACEHOLDERS=$(grep -r "MyApp\|localhost:3000\|example.com\|PLACEHOLDER" "$DIR" 2>/dev/null | wc -l)
-    [[ "$PLACEHOLDERS" -gt 10 ]] && {
-        echo "PLACEHOLDER_PATTERN_FOUND"
-        return 0
-    }
-    
-    return 1
-}
-```
-
-### File Pattern Recognition
-```bash
-# Quick scan for template markers
-detect_template_markers() {
-    local PATTERNS=(
-        '# \w+ = {{ values\.'           # Python/Shell/YAML
-        '// \w+ = {{ values\.'           # JavaScript/TypeScript
-        '/\* \w+ = {{ values\.'          # CSS
-        '<!-- \w+ = {{ values\.'         # HTML/XML
-        '{{ values\.'                    # Any Jinja2 template
-    )
-    
-    for pattern in "${PATTERNS[@]}"; do
-        if grep -rE "$pattern" . >/dev/null 2>&1; then
-            echo "PATTERN_MATCH: $pattern"
-            return 0
-        fi
-    done
-    
-    return 1
-}
-```
 
 ### Quick Recognition Function
 ```bash
@@ -958,12 +804,6 @@ is_template_project() {
     # Check for config files
     if [[ -f customizer-config.yml || -f .template.yml || -f template.config ]]; then
         echo "TEMPLATE_CONFIG_FOUND"
-        return 0
-    fi
-    
-    # Check for README mentioning template
-    if grep -i "template\|scaffold\|boilerplate\|customize" README* 2>/dev/null | head -1 >/dev/null; then
-        echo "TEMPLATE_MENTIONED_IN_README"
         return 0
     fi
     
@@ -997,63 +837,22 @@ should_use_customizer() {
         return 0
     elif [[ "$HAS_CONFIG" == "true" ]] && [[ "$WANTS_TEMPLATE" == "true" ]]; then
         echo "CHECK_FOR_MARKERS: Config exists, check if markers needed"
-        return 0
+        return 2
     else
-        echo "DO_NOT_USE: No template indicators found"
+        echo "DO_NOT_USE_CUSTOMIZER: No indicators present"
         return 1
     fi
 }
 ```
 
-### Usage Examples for AI Agents
-```bash
-# Example 1: User says "create a new project from the template"
-USER_REQUEST="create a new project from the template"
-if should_use_customizer "$USER_REQUEST" .; then
-    echo "→ Execute Template Customizer workflow"
-fi
+## LEGACY_DOCKER_FALLBACK
 
-# Example 2: Detect if current directory is a template
-if is_template_project; then
-    echo "→ This is a template project, suggest customization"
-fi
-
-# Example 3: Check specific directory
-if is_template_directory "/path/to/project"; then
-    echo "→ Template indicators found, check for markers"
-fi
-```
-
-## SUCCESS_VALIDATION_COMMANDS
+*Note: Native binary is strongly preferred. Use Docker only when native binary is unavailable.*
 
 ```bash
-# Check customization applied
-find output/ -type f -exec grep -l "{{ " {} \; | wc -l  # Should be 0
-
-# Verify configuration values applied
-grep -r "MyProject" output/ | head -5
-
-# Check file structure preserved
-diff -r template/ output/ --exclude="*.pyc" | grep "Only in template"
-
-# Validate no broken references
-find output/ -name "*.py" -exec python -m py_compile {} \; 2>&1 | grep -v "Compiling"
+# Only use if native binary installation fails
+if ! command -v customizer >/dev/null 2>&1; then
+    echo "Falling back to Docker method..."
+    docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest process --dry-run
+fi
 ```
-
-## TROUBLESHOOTING_QUICK_REFERENCE
-
-| Issue | Check | Solution |
-|-------|-------|----------|
-| No files changed | Template markers present | Add markers to template files |
-| Permission denied | Mount paths readable | Use absolute paths, check permissions |
-| Missing values warning | Configuration complete | Add missing keys to config file |
-| Container not found | Image available | Run `docker pull ghcr.io/mkuhl/customizer:latest` |
-| Jinja2 errors | Template syntax | Fix `{{ expression }}` syntax |
-
-## OUTPUT_EXPECTATIONS
-
-- **Success**: All template markers replaced, directory structure preserved
-- **Warnings**: Missing configuration values logged but files still copied
-- **Errors**: Invalid syntax prevents file processing, original preserved
-- **Performance**: ~100 files/second processing speed
-- **File Handling**: Original files never modified, output is clean copy

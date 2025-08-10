@@ -78,13 +78,13 @@ Support comment syntax for:
 ## Command Structure
 ```bash
 # Basic usage with rich output
-template-customizer process --project ./template --config ./config.yml
+customizer process --project ./template --config ./config.yml
 
 # Dry run with detailed preview
-template-customizer process --project ./template --config ./config.yml --dry-run
+customizer process --project ./template --config ./config.yml --dry-run
 
 # With filtering and verbose rich output
-template-customizer process --project ./template --config ./config.yml \
+customizer process --project ./template --config ./config.yml \
   --include "*.py,*.js,*.yml" --exclude "*test*" --verbose
 ```
 
@@ -150,12 +150,13 @@ Use the py-ang project as validation target by:
 - Document all rich formatting features
 
 ## CI/CD Pipeline
-- **GitHub Actions**: ✅ Complete CI/CD pipeline with 5 parallel jobs (test, quality, docker-build, docker-publish, release) - **ACTIVE ON MASTER**
+- **GitHub Actions**: ✅ Complete CI/CD pipeline with 6 parallel jobs (test, quality, docker-build, native-linux, docker-publish, release) - **ACTIVE ON MASTER**
 - **Quality Gates**: All code must pass ruff linting, black formatting, mypy type checking, and pytest
 - **Scope**: Code quality checks limited to `src/` directory only
+- **Native Binary Build**: Automated PyInstaller-based Linux x86_64 executable generation with ~100ms startup
 - **Docker Build**: Automated Docker image building and testing with dynamic versioning
 - **Docker Publish**: Automated publishing to GitHub Container Registry (GHCR) at `ghcr.io/mkuhl/customizer`
-- **Release Automation**: Automated GitHub Releases with standalone customizer script on version tags
+- **Release Automation**: Automated GitHub Releases with native binary, Docker wrapper, and install script
 - **Coverage**: Minimum 50% test coverage required (currently 79%+)
 - **MyPy Configuration**: Pragmatic settings for CI compatibility (some modules excluded temporarily)
 - **Status**: ✅ All checks passing on master branch
@@ -165,9 +166,10 @@ Use the py-ang project as validation target by:
 - **CI Requirements**: All changes must pass CI checks before merging to master
 - **Pull Requests**: Required for all changes to master branch
 - **Local Testing**: Run `pytest`, `ruff check src/`, `black --check src/`, `mypy src/` before pushing
+- **Native Binary Testing**: Use `./scripts/build-native.sh` to test native executable locally
 - **Docker Testing**: Use `./scripts/docker-build.sh` to test Docker integration locally
 - **Manual Publishing**: Use `./scripts/docker-publish.sh` for manual Docker image publishing to GHCR
-- **Release Process**: Update version in `__init__.py` → create git tag `v*.*.*` → automated release creation
+- **Release Process**: Update version in `__init__.py` → create git tag `v*.*.*` → automated release with multi-asset distribution
 
 ## Git Commits
 - Always use the mkuhl and mkuhl@softmachine.at as git user
