@@ -224,9 +224,9 @@ jobs:
     - name: Install UPX and compress
       run: |
         sudo apt-get update && sudo apt-get install -y upx
-        echo "📦 Original size: $(du -h dist/template-customizer | cut -f1)"
-        upx --best --lzma dist/template-customizer || true
-        echo "📦 Compressed size: $(du -h dist/template-customizer | cut -f1)"
+        echo "📦 Original size: $(du -h dist/customizer | cut -f1)"
+        upx --best --lzma dist/customizer || true
+        echo "📦 Compressed size: $(du -h dist/customizer | cut -f1)"
 
     - name: Test native binary
       run: |
@@ -266,25 +266,25 @@ jobs:
     - name: Generate checksums
       run: |
         cd dist
-        sha256sum template-customizer > template-customizer.sha256
-        echo "📋 Checksum: $(cat template-customizer.sha256)"
+        sha256sum customizer > customizer.sha256
+        echo "📋 Checksum: $(cat customizer.sha256)"
 
     - name: Create distribution archive
       run: |
         cd dist
-        tar -czf template-customizer-linux-x64.tar.gz \
-          template-customizer \
-          template-customizer.sha256
+        tar -czf customizer-linux-x64.tar.gz \
+          customizer \
+          customizer.sha256
         ls -lh *.tar.gz
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v4
       with:
-        name: template-customizer-linux-x64
+        name: customizer-linux-x64
         path: |
-          dist/template-customizer
-          dist/template-customizer.sha256
-          dist/template-customizer-linux-x64.tar.gz
+          dist/customizer
+          dist/customizer.sha256
+          dist/customizer-linux-x64.tar.gz
 
   docker-publish:
     name: Publish Docker Image to GHCR
