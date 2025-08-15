@@ -4,7 +4,7 @@
 
 **OPTIMIZATION**: Structured as executable decision trees with validation checkpoints for deterministic execution.
 
-**VERSION**: 0.2.0
+**VERSION**: 0.2.1
 **NATIVE BINARY**: https://github.com/mkuhl/customizer/releases/latest/download/customizer-linux-x64.tar.gz
 **METHOD**: Native Linux executable (primary) with Docker fallback (legacy)
 
