@@ -48,18 +48,18 @@ customizer/
 ### Template Marker Format
 The tool processes comment-based markers in this format:
 ```python
-# variable_name = {{ jinja2_expression }}
+# variable_name = {{ values.jinja2_expression }}
 actual_value = "default_value"
 ```
 
 ### File Type Support
 Support comment syntax for:
-- Python/Shell: `# marker = {{ expr }}`
-- JavaScript/TypeScript: `// marker = {{ expr }}`
-- CSS: `/* marker = {{ expr }} */`
-- HTML/XML: `<!-- marker = {{ expr }} -->`
-- YAML: `# marker = {{ expr }}`
-- Dockerfile: `# marker = {{ expr }}`
+- Python/Shell: `# marker = {{ values.expr }}`
+- JavaScript/TypeScript: `// marker = {{ values.expr }}`
+- CSS: `/* marker = {{ values.expr }} */`
+- HTML/XML: `<!-- marker = {{ values.expr }} -->`
+- YAML: `# marker = {{ values.expr }}`
+- Dockerfile: `# marker = {{ values.expr }}`
 
 ### Safety Requirements
 - Always preserve comment lines unchanged

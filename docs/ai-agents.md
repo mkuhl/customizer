@@ -4,7 +4,7 @@
 
 **OPTIMIZATION**: Structured as executable decision trees with validation checkpoints for deterministic execution.
 
-**VERSION**: 0.2.1
+**VERSION**: 0.2.2
 **NATIVE BINARY**: https://github.com/mkuhl/customizer/releases/latest/download/customizer-linux-x64.tar.gz
 **METHOD**: Native Linux executable (primary) with Docker fallback (legacy)
 
@@ -124,7 +124,7 @@ fi
 
 ### Use Template Customizer When:
 - `grep -r "{{ values\." .` returns matches
-- Project contains template markers in comments: `# variable = {{ expression }}`
+- Project contains template markers in comments: `# variable = {{ values.expression }}`
 - Need to customize multiple files with same configuration values
 - Template directory structure should be preserved
 - Files contain placeholder values that need systematic replacement
@@ -370,14 +370,14 @@ echo "✓ Project '${PROJECT_NAME}' created in ${OUTPUT_DIR}/"
 
 ### Supported File Types and Comment Patterns
 ```
-Python (.py):           # variable_name = {{ jinja_expression }}
-JavaScript (.js):       // variable_name = {{ jinja_expression }}
-TypeScript (.ts):       // variable_name = {{ jinja_expression }}
-CSS (.css):             /* variable_name = {{ jinja_expression }} */
-HTML (.html):           <!-- variable_name = {{ jinja_expression }} -->
-YAML (.yml,.yaml):      # variable_name = {{ jinja_expression }}
-Dockerfile:             # variable_name = {{ jinja_expression }}
-Shell (.sh):            # variable_name = {{ jinja_expression }}
+Python (.py):           # variable_name = {{ values.jinja_expression }}
+JavaScript (.js):       // variable_name = {{ values.jinja_expression }}
+TypeScript (.ts):       // variable_name = {{ values.jinja_expression }}
+CSS (.css):             /* variable_name = {{ values.jinja_expression }} */
+HTML (.html):           <!-- variable_name = {{ values.jinja_expression }} -->
+YAML (.yml,.yaml):      # variable_name = {{ values.jinja_expression }}
+Dockerfile:             # variable_name = {{ values.jinja_expression }}
+Shell (.sh):            # variable_name = {{ values.jinja_expression }}
 ```
 
 ### Template Marker Rules
@@ -389,13 +389,13 @@ Shell (.sh):            # variable_name = {{ jinja_expression }}
 
 ### Example Template File Structure
 ```python
-# project_name = {{ project.name }}
+# project_name = {{ values.project.name }}
 PROJECT_NAME = "default-project"
 
-# api_version = {{ api.version }}
+# api_version = {{ values.api.version }}
 API_VERSION = "v1"
 
-# database_url = {{ database.host }}/{{ database.name }}
+# database_url = {{ values.database.host }}/{{ values.database.name }}
 DATABASE_URL = "localhost/default"
 ```
 
