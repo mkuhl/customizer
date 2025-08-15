@@ -51,70 +51,20 @@ sudo mv customizer /usr/local/bin
 ./customizer process --project ./examples/test-project --yes
 ```
 
-### 🐳 Docker Wrapper Script
+### 🐳 Docker Usage
 
-Use when native binary isn't available or for cross-platform consistency:
+For cross-platform compatibility or when native binary isn't available:
 
 ```bash
 # Download the Docker wrapper script
 curl -L -o run-docker-customizer.sh https://github.com/mkuhl/customizer/releases/latest/download/run-docker-customizer.sh
 chmod +x run-docker-customizer.sh
 
-# Show help
-./run-docker-customizer.sh --help
-
-# Show version information
-./run-docker-customizer.sh version
-
-# Show supported file types
-./run-docker-customizer.sh info
-
-# Preview changes (dry run)
+# Basic usage (equivalent to native binary)
 ./run-docker-customizer.sh process --project ./examples/test-project --config ./examples/config.yml --dry-run
-
-# Apply changes
-./run-docker-customizer.sh process --project ./examples/test-project --config ./examples/config.yml
 ```
 
-### Docker Usage 🐳
-
-Run template-customizer via Docker without installing it locally:
-
-```bash
-# Build the Docker image first
-./scripts/docker-build.sh
-
-# Show help
-./scripts/docker-run.sh --help
-
-# Show version information
-./scripts/docker-run.sh version
-
-# Show supported file types
-./scripts/docker-run.sh info
-
-# Preview changes (dry run) using test-template
-./scripts/docker-run.sh process --dry-run
-
-# Apply changes with confirmation prompt
-./scripts/docker-run.sh process
-
-# Apply changes without confirmation (for CI/automation)
-./scripts/docker-run.sh process --yes
-
-# Use a different template directory
-TEMPLATE_DIR=/path/to/your/template ./scripts/docker-run.sh process --dry-run
-
-# With custom config file (must be in template directory)
-TEMPLATE_DIR=/path/to/your/template ./scripts/docker-run.sh process --config custom-config.yml --dry-run
-```
-
-**Docker Benefits:**
-- ✅ No local Python installation required
-- ✅ Consistent environment across different systems
-- ✅ Automatic config file detection
-- ✅ Interactive confirmation prompts work correctly
-- ✅ Easy CI/CD integration
+📖 **[Complete Docker Documentation](DOCKER.md)** - Detailed Docker usage, CI/CD integration, and advanced examples
 
 ## Current Status ✅
 

@@ -1,7 +1,7 @@
 # Template Customizer
 
 [![CI](https://github.com/mkuhl/customizer/actions/workflows/ci.yml/badge.svg)](https://github.com/mkuhl/customizer/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.1.6-blue.svg)](https://github.com/mkuhl/customizer/releases)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/mkuhl/customizer/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-blue.svg)](https://github.com/mkuhl/customizer/pkgs/container/customizer)
@@ -85,9 +85,9 @@ customizer --version
 customizer process --dry-run
 ```
 
-### 🐳 Docker Wrapper Script
+### 🐳 Docker Installation
 
-Cross-platform compatibility when native binary isn't available:
+For cross-platform compatibility or when native binary isn't available:
 
 ```bash
 # Download the Docker wrapper script  
@@ -95,21 +95,11 @@ curl -L -o run-docker-customizer.sh https://github.com/mkuhl/customizer/releases
 chmod +x run-docker-customizer.sh
 sudo mv run-docker-customizer.sh /usr/local/bin/
 
-# Verify installation (pulls Docker image on first run)
+# Verify installation
 run-docker-customizer.sh --version
 ```
 
-### 🛠️ Direct Docker Usage
-
-For integration with existing Docker workflows:
-
-```bash
-# Run with Docker directly
-docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest process --dry-run
-
-# Or use a specific version
-docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:0.1.6 process --dry-run
-```
+📖 **[Complete Docker Documentation](docs/DOCKER.md)** - Detailed Docker usage, CI/CD integration, and troubleshooting
 
 ## Installation Comparison
 
@@ -117,8 +107,7 @@ docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:0.1.6 process --dr
 |--------|-------------|------|--------------|----------|
 | **One-Liner Install** | ~100ms ⚡ | 11MB | Linux x86_64, GLIBC 2.31+ | Easiest setup, recommended for most users |
 | **Manual Binary** | ~100ms ⚡ | 11MB | Linux x86_64, GLIBC 2.31+ | CI/CD pipelines, controlled environments |
-| **Docker Wrapper** | 2-3s | N/A | Docker installed | Cross-platform consistency |
-| **Direct Docker** | 2-3s | N/A | Docker installed | Integration with existing Docker workflows |
+| **Docker Methods** | 2-3s | N/A | Docker installed | Cross-platform consistency, CI/CD integration |
 
 ### System Requirements
 
@@ -126,9 +115,9 @@ docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:0.1.6 process --dr
 - Linux x86_64 (Ubuntu 20.04+, RHEL 8+, Debian 11+, or compatible)
 - GLIBC 2.31 or newer (check with `ldd --version`)
 
-**For Docker Options:**
-- Docker installed and running
-- Internet connection for initial image download
+**For Docker Methods:**
+- Docker installed and running  
+- See [Docker Documentation](docs/DOCKER.md) for detailed requirements
 
 ## Usage Examples
 
@@ -164,26 +153,7 @@ customizer process --project ./my-template --config ./config.yml --dry-run
 customizer process --project ./my-template --config ./config.yml --yes
 ```
 
-### Docker Usage
-
-Using Docker requires no local Python installation:
-
-```bash
-# Pull the latest image
-docker pull ghcr.io/mkuhl/customizer:latest
-
-# Preview changes with auto-detected config
-docker run --rm -v "/path/to/template:/workdir" ghcr.io/mkuhl/customizer:latest process --dry-run
-
-# Apply changes
-docker run --rm -v "/path/to/template:/workdir" ghcr.io/mkuhl/customizer:latest process --yes
-
-# Use custom configuration file
-docker run --rm -v "/path/to/template:/workdir" ghcr.io/mkuhl/customizer:latest process --config custom-config.yml --dry-run
-
-# Generate output to a separate directory
-docker run --rm -v "/path/to/template:/workdir" -v "/path/to/output:/output" ghcr.io/mkuhl/customizer:latest process --output /output --yes
-```
+For Docker usage examples, see the **[Docker Documentation](docs/DOCKER.md)**.
 
 ### Advanced Examples
 
@@ -226,7 +196,7 @@ customizer process --project ./template --config ./config.yml --yes
 - **Safe processing** - Automatic backups and validation
 - **Missing value warnings** - Clear warnings for undefined configuration values
 - **Flexible filtering** - Include/exclude patterns for selective processing
-- **Docker support** - Pre-built images for deployment and CI/CD integration
+- **Docker support** - [Complete Docker integration](docs/DOCKER.md) for CI/CD and cross-platform deployment
 
 ## Template Marker Format
 

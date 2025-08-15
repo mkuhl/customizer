@@ -4,7 +4,7 @@
 
 **OPTIMIZATION**: Structured as executable decision trees with validation checkpoints for deterministic execution.
 
-**VERSION**: 0.1.6
+**VERSION**: 0.2.0
 **NATIVE BINARY**: https://github.com/mkuhl/customizer/releases/latest/download/customizer-linux-x64.tar.gz
 **METHOD**: Native Linux executable (primary) with Docker fallback (legacy)
 
@@ -845,14 +845,16 @@ should_use_customizer() {
 }
 ```
 
-## LEGACY_DOCKER_FALLBACK
+## DOCKER_FALLBACK
 
-*Note: Native binary is strongly preferred. Use Docker only when native binary is unavailable.*
+*Note: Native binary is strongly preferred for performance (~100ms vs 2-3s startup). Use Docker for cross-platform consistency or when native binary is unavailable.*
 
 ```bash
-# Only use if native binary installation fails
+# Only use if native binary installation fails or cross-platform consistency needed
 if ! command -v customizer >/dev/null 2>&1; then
     echo "Falling back to Docker method..."
     docker run --rm -v "$(pwd):/workdir" ghcr.io/mkuhl/customizer:latest process --dry-run
 fi
 ```
+
+📖 **[Complete Docker Documentation](DOCKER.md)** - Detailed Docker usage, CI/CD integration, and troubleshooting
