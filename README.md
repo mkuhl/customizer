@@ -1,7 +1,7 @@
 # Template Customizer
 
 [![CI](https://github.com/mkuhl/customizer/actions/workflows/ci.yml/badge.svg)](https://github.com/mkuhl/customizer/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)](https://github.com/mkuhl/customizer/releases)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/mkuhl/customizer/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-blue.svg)](https://github.com/mkuhl/customizer/pkgs/container/customizer)
@@ -190,6 +190,7 @@ customizer process --project ./template --config ./config.yml --yes
 ## Features
 
 - **Comment-based markers** - Templates remain fully functional and compileable
+- **External replacements** - JSONPath for JSON files, patterns for Markdown (no comments needed!)
 - **Multi-language support** - Python, JavaScript, TypeScript, YAML, HTML, CSS, Docker, and more
 - **Rich CLI output** - Progress bars, colored output, and detailed previews
 - **Dry-run mode** - Preview changes before applying
@@ -258,6 +259,75 @@ port = 5432
 
 # registry = {{ values.docker.registry | quote }}
 registry = "ghcr.io"
+```
+
+## External Replacements (New in v0.3.0)
+
+For files that don't support comments (like JSON) or when you prefer external configuration, Template Customizer supports external replacement definitions in your config file.
+
+### JSON File Replacements
+
+JSON files don't support comments, so use JSONPath expressions in your config:
+
+```yaml
+# config.yml
+project:
+  name: "my-app"
+  version: "2.0.0"
+  author: "Jane Developer"
+
+replacements:
+  json:
+    "package.json":
+      "$.name": "{{ values.project.name }}"
+      "$.version": "{{ values.project.version }}"
+      "$.author": "{{ values.project.author }}"
+      "$.scripts.start": "node {{ values.project.name }}.js"
+      "$.dependencies.react": "^18.0.0"
+      "$.config.port": "{{ values.server.port }}"
+      "$.config.debug": true  # Booleans are preserved
+```
+
+### Markdown File Replacements
+
+Replace content in Markdown files using patterns:
+
+```yaml
+replacements:
+  markdown:
+    "README.md":
+      "pattern: # Old Title": "# {{ values.project.name | title }}"
+      "pattern: Version: .*": "Version: {{ values.project.version }}"
+      "pattern: Copyright \\(c\\) \\d+": "Copyright (c) 2024"
+      "literal: [PLACEHOLDER]": "{{ values.project.description }}"  # Literal string (no regex)
+```
+
+### Features
+
+- **JSONPath Support**: Use standard JSONPath expressions to target any value in JSON files
+- **Pattern Matching**: Use regex patterns or literal strings for Markdown/text files
+- **Type Preservation**: JSON types (strings, numbers, booleans) are automatically preserved
+- **Template Rendering**: Full Jinja2 template support in replacement values
+- **No Comment Pollution**: Keep your JSON and other files clean without comment markers
+
+### Example
+
+**Before** (package.json):
+```json
+{
+  "name": "template-project",
+  "version": "0.0.0",
+  "author": "Template Author"
+}
+```
+
+**After** (with external replacements):
+```json
+{
+  "name": "my-app",
+  "version": "2.0.0",
+  "author": "Jane Developer"
+}
 ```
 
 ## Missing Values Handling

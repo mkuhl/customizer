@@ -11,8 +11,10 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from . import __version__
+from .core.external_replacements import ExternalReplacementConfig
 from .core.parser import CommentParser
 from .core.processor import ParameterLoader, TemplateProcessor
+from .core.replacers import JSONReplacer, MarkdownReplacer
 from .core.scanner import FileScanner
 from .core.writer import FileChange, FileWriter
 from .utils.file_types import FileTypeDetector
@@ -355,11 +357,94 @@ def process(
 
                 progress.advance(process_task)
 
-        # Show results
-        _show_results(all_changes, processed_files, skipped_files, dry_run, verbose)
+        # Process external replacements if configured
+        ext_config = ExternalReplacementConfig(parameters)
+        external_changes = []
+        external_processed = 0
+
+        if ext_config.has_replacements():
+            console.print("\n[blue]Processing external replacements...[/blue]")
+
+            # Process JSON replacements
+            json_replacements = ext_config.get_json_replacements()
+            if json_replacements:
+                json_replacer = JSONReplacer(parameters)
+                for file_str, rules in json_replacements.items():
+                    file_path = project / file_str
+                    if file_path.exists():
+                        try:
+                            # Read original content for preview
+                            original_content = file_path.read_text()
+
+                            # Get replaced content
+                            new_content = json_replacer.replace(file_path, rules)
+
+                            if original_content != new_content:
+                                external_processed += 1
+
+                                # For dry-run, just show what would change
+                                if verbose or dry_run:
+                                    msg = f"[green]External:[/green] {file_str} (JSON)"
+                                    console.print(msg)
+                                    for jsonpath, _ in rules.items():
+                                        path_msg = f"  [blue]JSONPath:[/blue] {jsonpath}"
+                                        console.print(path_msg)
+
+                                # Store change for application
+                                if not dry_run:
+                                    external_changes.append((file_path, new_content))
+                        except Exception as e:
+                            err_msg = f"[red]Error processing {file_str}:[/red] {e}"
+                            console.print(err_msg)
+                    else:
+                        warn_msg = f"[yellow]Warning:[/yellow] File not found: {file_str}"
+                        console.print(warn_msg)
+
+            # Process Markdown replacements
+            md_replacements = ext_config.get_markdown_replacements()
+            if md_replacements:
+                md_replacer = MarkdownReplacer(parameters)
+                for file_str, rules in md_replacements.items():
+                    file_path = project / file_str
+                    if file_path.exists():
+                        try:
+                            # Read original content
+                            original_content = file_path.read_text()
+
+                            # Get replaced content
+                            new_content = md_replacer.replace(file_path, rules)
+
+                            if original_content != new_content:
+                                external_processed += 1
+
+                                # For dry-run, just show what would change
+                                if verbose or dry_run:
+                                    msg = f"[green]External:[/green] {file_str} (Markdown)"
+                                    console.print(msg)
+                                    for pattern, _ in rules.items():
+                                        pat_msg = f"  [blue]Pattern:[/blue] {pattern}"
+                                        console.print(pat_msg)
+
+                                # Store change for application
+                                if not dry_run:
+                                    external_changes.append((file_path, new_content))
+                        except Exception as e:
+                            err_msg = f"[red]Error processing {file_str}:[/red] {e}"
+                            console.print(err_msg)
+                    else:
+                        warn_msg = f"[yellow]Warning:[/yellow] File not found: {file_str}"
+                        console.print(warn_msg)
+
+            if external_processed > 0:
+                msg = f"[green]✓[/green] Processed {external_processed} files with external replacements"
+                console.print(msg)
+
+        # Show results (including external replacements count)
+        total_processed = processed_files + external_processed
+        _show_results(all_changes, total_processed, skipped_files, dry_run, verbose)
 
         # Apply changes if not dry run
-        if not dry_run and (all_changes or (output and files_to_copy)):
+        if not dry_run and (all_changes or external_changes or (output and files_to_copy)):
             should_apply = yes or click.confirm("Apply these changes?")
             if should_apply:
                 # If output directory is specified, copy files first
@@ -391,6 +476,26 @@ def process(
                                 console.print(f"[blue]Copied:[/blue] {rel_path}")
 
                 success = writer.apply_changes(all_changes, dry_run=False)
+
+                # Apply external replacements
+                if success and external_changes:
+                    for file_path, new_content in external_changes:
+                        try:
+                            # Create backup if needed
+                            if writer.backup_enabled:
+                                writer.create_backup(file_path)
+
+                            # Write new content
+                            file_path.write_text(new_content)
+
+                            if verbose:
+                                msg = f"[green]Applied:[/green] {file_path.name} (external)"
+                                console.print(msg)
+                        except Exception as e:
+                            err = f"[red]Failed to apply external changes to {file_path}:[/red] {e}"
+                            console.print(err)
+                            success = False
+
                 if success:
                     console.print("[green]✓ All changes applied successfully![/green]")
                 else:

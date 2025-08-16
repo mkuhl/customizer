@@ -44,6 +44,10 @@ class ParameterValidator:
                 for key, value in obj.items():
                     current_path = f"{path}.{key}" if path else key
 
+                    # Skip validation for replacements section (has special syntax)
+                    if path.startswith("replacements") or key == "replacements":
+                        continue
+
                     # Check key naming
                     if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", key):
                         errors.append(

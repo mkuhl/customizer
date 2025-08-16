@@ -4,7 +4,7 @@
 
 **OPTIMIZATION**: Structured as executable decision trees with validation checkpoints for deterministic execution.
 
-**VERSION**: 0.2.2
+**VERSION**: 0.3.0 (with External Replacements)
 **NATIVE BINARY**: https://github.com/mkuhl/customizer/releases/latest/download/customizer-linux-x64.tar.gz
 **METHOD**: Native Linux executable (primary) with Docker fallback (legacy)
 
@@ -339,7 +339,36 @@ done
     test $(grep -r "{{ values\." . | wc -l) -eq 0 || exit 1
 ```
 
-### Pattern 6: Project Initialization from Template
+### Pattern 6: External Replacements for JSON/Markdown
+```bash
+# Context: Project has JSON files and README to customize
+# Create config with external replacements
+cat > config.yml << 'EOF'
+project:
+  name: "my-app"
+  version: "2.0.0"
+  description: "My awesome application"
+
+replacements:
+  json:
+    "package.json":
+      "$.name": "{{ values.project.name }}"
+      "$.version": "{{ values.project.version }}"
+      "$.description": "{{ values.project.description }}"
+  markdown:
+    "README.md":
+      "pattern: # Project Name": "# {{ values.project.name | title }}"
+      "pattern: Version: .*": "Version: {{ values.project.version }}"
+EOF
+
+# Execute customization (JSON and Markdown files updated)
+customizer process --config config.yml --yes
+
+# Verify JSON is valid
+python3 -m json.tool package.json > /dev/null && echo "✓ JSON valid"
+```
+
+### Pattern 7: Project Initialization from Template
 ```bash
 # Context: Create new project from template
 PROJECT_NAME="$1"
@@ -386,6 +415,40 @@ Shell (.sh):            # variable_name = {{ values.jinja_expression }}
 - Original comment lines are preserved unchanged
 - Only following line content is modified
 - Invalid Jinja2 expressions cause file-level warnings
+
+### External Replacements (JSON/Markdown Support)
+For files that don't support comments (JSON) or when external configuration is preferred:
+
+#### JSON File Replacements
+```yaml
+# In config.yml - use JSONPath expressions
+replacements:
+  json:
+    "package.json":
+      "$.name": "{{ values.project.name }}"
+      "$.version": "{{ values.project.version }}"
+      "$.scripts.start": "node {{ values.project.name }}.js"
+      "$.dependencies.react": "^18.0.0"
+      "$.config.port": "{{ values.server.port }}"
+      "$.config.debug": true  # Booleans preserved
+```
+
+#### Markdown File Replacements  
+```yaml
+replacements:
+  markdown:
+    "README.md":
+      "pattern: # Old Title": "# {{ values.project.name | title }}"
+      "pattern: Version: .*": "Version: {{ values.project.version }}"
+      "literal: [PLACEHOLDER]": "{{ values.project.description }}"
+```
+
+Features:
+- JSONPath for precise JSON targeting
+- Regex patterns for Markdown/text files
+- Type preservation (strings, numbers, booleans)
+- No comment markers needed in files
+- Full Jinja2 template support
 
 ### Example Template File Structure
 ```python

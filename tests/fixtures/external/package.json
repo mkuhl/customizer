@@ -1,0 +1,29 @@
+{
+  "name": "default-project",
+  "version": "1.0.0",
+  "description": "A default project description",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "build": "webpack"
+  },
+  "author": "Default Author",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.1",
+    "react": "^17.0.2"
+  },
+  "devDependencies": {
+    "jest": "^27.0.0",
+    "webpack": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/default/repo.git"
+  },
+  "keywords": ["default", "template"],
+  "config": {
+    "port": 3000,
+    "debug": false
+  }
+}

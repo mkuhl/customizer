@@ -203,4 +203,93 @@ If there's a major version mismatch, you'll see a warning:
 Continue anyway? [y/N]
 ```
 
+### 📦 External Replacements (JSON/Markdown Support)
+
+Template Customizer now supports external replacements for files that don't support comments well (like JSON) or when you prefer to keep replacement rules in your configuration file.
+
+#### JSON File Replacements
+
+Use JSONPath expressions to target specific values in JSON files:
+
+```yaml
+# config.yml
+project:
+  name: "my-awesome-app"
+  version: "2.0.0"
+  description: "Built with Template Customizer"
+
+replacements:
+  json:
+    "package.json":
+      "$.name": "{{ values.project.name }}"
+      "$.version": "{{ values.project.version }}"
+      "$.description": "{{ values.project.description }}"
+      "$.scripts.start": "node {{ values.project.name }}.js"
+      "$.dependencies.react": "^18.0.0"
+      "$.config.port": 8080
+      "$.config.debug": true  # Booleans are preserved
+```
+
+**Features:**
+- Standard JSONPath syntax for precise targeting
+- Automatic type preservation (strings, numbers, booleans)
+- Works with nested objects and arrays
+- No comment markers needed in JSON files
+
+#### Markdown File Replacements
+
+Use regex patterns or literal strings to update Markdown files:
+
+```yaml
+replacements:
+  markdown:
+    "README.md":
+      "pattern: # Old Project Name": "# {{ values.project.name | title }}"
+      "pattern: Version: .*": "Version: {{ values.project.version }}"
+      "pattern: Copyright \\(c\\) \\d+": "Copyright (c) 2024"
+      "literal: [PLACEHOLDER]": "{{ values.project.description }}"  # Literal match
+```
+
+**Pattern Types:**
+- `pattern:` - Regular expression matching
+- `literal:` - Exact string matching (special characters escaped)
+- Full Jinja2 template support with filters
+
+#### Example: Complete Project Customization
+
+```yaml
+# config.yml
+project:
+  name: "awesome-api"
+  version: "3.0.0"
+  author: "Jane Developer"
+
+server:
+  port: 8080
+  host: "api.example.com"
+
+# Traditional marker-based replacements for Python files
+# (These use comment markers in the files)
+
+# External replacements for JSON and Markdown
+replacements:
+  json:
+    "package.json":
+      "$.name": "{{ values.project.name }}"
+      "$.version": "{{ values.project.version }}"
+      "$.author": "{{ values.project.author }}"
+    "tsconfig.json":
+      "$.compilerOptions.outDir": "./dist"
+  markdown:
+    "README.md":
+      "pattern: # Template Project": "# {{ values.project.name | title }}"
+      "pattern: localhost:3000": "{{ values.server.host }}:{{ values.server.port }}"
+```
+
+Run the customization:
+```bash
+customizer process --config config.yml --dry-run  # Preview changes
+customizer process --config config.yml --yes       # Apply changes
+```
+
 The foundation is solid and working perfectly! 🚀

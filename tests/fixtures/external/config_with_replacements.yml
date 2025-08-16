@@ -1,0 +1,47 @@
+# Test configuration with external replacements
+project:
+  name: "my-awesome-app"
+  version: "2.0.0"
+  description: "An awesome application built from template"
+  author: "Jane Developer"
+
+docker:
+  registry: "ghcr.io/mycompany"
+  image: "my-awesome-app"
+  tag: "2.0.0"
+
+api:
+  endpoint: "https://api.mycompany.com/v2"
+  
+build:
+  outputDir: "./build"
+  port: 8080
+
+# External replacements for files without comment support
+replacements:
+  json:
+    "package.json":
+      "$.name": "{{ values.project.name }}"
+      "$.version": "{{ values.project.version }}"
+      "$.description": "{{ values.project.description }}"
+      "$.author": "{{ values.project.author }}"
+      "$.repository.url": "https://github.com/mycompany/{{ values.project.name }}.git"
+      "$.keywords[0]": "{{ values.project.name }}"
+      "$.config.port": "{{ values.build.port }}"
+      "$.config.debug": true
+    
+    "tsconfig.json":
+      "$.compilerOptions.outDir": "{{ values.build.outputDir }}"
+      "$.compilerOptions.strict": false
+      
+  markdown:
+    "README.md":
+      "pattern: # Default Project": "# {{ values.project.name | title }}"
+      "pattern: Version: .*": "Version: {{ values.project.version }}"
+      "pattern: npm install default-project": "npm install {{ values.project.name }}"
+      "pattern: docker pull .*:latest": "docker pull {{ values.docker.registry }}/{{ values.docker.image }}:{{ values.docker.tag }}"
+      "pattern: docker run (.*) .*:latest": "docker run \\1 {{ values.docker.registry }}/{{ values.docker.image }}:{{ values.docker.tag }}"
+      "pattern: port 3000": "port {{ values.build.port }}"
+      "pattern: https://api.example.com/v1": "{{ values.api.endpoint }}"
+      "pattern: Copyright \\(c\\) \\d+ .*": "Copyright (c) 2024 {{ values.project.author }}"
+      "pattern: https://github.com/default/repo": "https://github.com/mycompany/{{ values.project.name }}"
