@@ -3,7 +3,7 @@
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
 from jinja2 import Environment, Template
 from jsonpath_ng import parse as parse_jsonpath
@@ -148,7 +148,7 @@ class JSONReplacer:
         path = jsonpath.lstrip("$.")
 
         # Split path into parts
-        parts = []
+        parts: List[Union[str, int]] = []
         current = ""
         in_brackets = False
 
@@ -182,15 +182,15 @@ class JSONReplacer:
                     current_data.append(None)
                 if current_data[part] is None:
                     # Determine if next part is array or object
-                    next_part = parts[i + 1]
-                    current_data[part] = [] if isinstance(next_part, int) else {}
+                    next_part_arr = parts[i + 1] if i + 1 < len(parts) else None
+                    current_data[part] = [] if isinstance(next_part_arr, int) else {}
                 current_data = current_data[part]
             else:
                 # Object key
                 if part not in current_data:
                     # Determine if next part is array or object
-                    next_part = parts[i + 1] if i + 1 < len(parts) else None
-                    current_data[part] = [] if isinstance(next_part, int) else {}
+                    next_part_obj = parts[i + 1] if i + 1 < len(parts) else None
+                    current_data[part] = [] if isinstance(next_part_obj, int) else {}
                 current_data = current_data[part]
 
         # Set final value
