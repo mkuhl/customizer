@@ -130,15 +130,16 @@ class VersionCompatibilityChecker:
             config_content = config_path.read_text(encoding="utf-8")
 
             # Look for version information in config
+            # Only match customizer-specific version fields, not project versions
             version_patterns = [
                 r'customizer[_-]?version\s*:\s*["\']?([^"\'\\s]+)["\']?',
                 r'tool[_-]?version\s*:\s*["\']?([^"\'\\s]+)["\']?',
-                r'version\s*:\s*["\']?([^"\'\\s]+)["\']?',
+                r'^version\s*:\s*["\']?([^"\'\\s]+)["\']?',  # Match at line start
             ]
 
             config_version = None
             for pattern in version_patterns:
-                match = re.search(pattern, config_content, re.IGNORECASE)
+                match = re.search(pattern, config_content, re.IGNORECASE | re.MULTILINE)
                 if match:
                     try:
                         config_version = VersionParser.parse(match.group(1))

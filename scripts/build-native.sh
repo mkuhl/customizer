@@ -84,7 +84,7 @@ else
         --clean \
         --distpath "$DIST_DIR" \
         --workpath ./build \
-        --optimize 2 \
+        --optimize 1 \
         --exclude-module tkinter \
         --exclude-module matplotlib \
         --exclude-module numpy \

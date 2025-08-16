@@ -65,7 +65,7 @@ a = Analysis(
         'pkg_resources',
     ],
     noarchive=False,
-    optimize=2,  # Optimize bytecode
+    optimize=1,  # Optimize bytecode (level 1 preserves docstrings)
 )
 
 pyz = PYZ(
