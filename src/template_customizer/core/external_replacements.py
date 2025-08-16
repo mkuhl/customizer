@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 class ExternalReplacementError(Exception):
     """Base exception for external replacement errors."""
+
     pass
 
 

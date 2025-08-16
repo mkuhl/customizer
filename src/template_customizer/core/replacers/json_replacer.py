@@ -39,7 +39,7 @@ class JSONReplacer:
         """
         try:
             # Read and parse JSON file
-            with open(file_path, encoding='utf-8') as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
                 data = json.loads(content)
 
@@ -78,7 +78,7 @@ class JSONReplacer:
             return template_expr
 
         # Handle direct values (not templates)
-        if not ('{{' in template_expr and '}}' in template_expr):
+        if not ("{{" in template_expr and "}}" in template_expr):
             # Try to parse as JSON value (number, boolean, null)
             try:
                 return json.loads(template_expr)
@@ -92,11 +92,11 @@ class JSONReplacer:
 
         # Try to parse result as JSON value
         result_stripped = result.strip()
-        if result_stripped.lower() == 'true':
+        if result_stripped.lower() == "true":
             return True
-        elif result_stripped.lower() == 'false':
+        elif result_stripped.lower() == "false":
             return False
-        elif result_stripped.lower() == 'null' or result_stripped.lower() == 'none':
+        elif result_stripped.lower() == "null" or result_stripped.lower() == "none":
             return None
         else:
             try:
@@ -145,7 +145,7 @@ class JSONReplacer:
         """
         # Simple implementation for common cases
         # Remove $ prefix
-        path = jsonpath.lstrip('$.')
+        path = jsonpath.lstrip("$.")
 
         # Split path into parts
         parts = []
@@ -153,17 +153,17 @@ class JSONReplacer:
         in_brackets = False
 
         for char in path:
-            if char == '[':
+            if char == "[":
                 if current:
                     parts.append(current)
                     current = ""
                 in_brackets = True
-            elif char == ']':
+            elif char == "]":
                 if current:
                     parts.append(int(current) if current.isdigit() else current)
                     current = ""
                 in_brackets = False
-            elif char == '.' and not in_brackets:
+            elif char == "." and not in_brackets:
                 if current:
                     parts.append(current)
                     current = ""
@@ -212,7 +212,7 @@ class JSONReplacer:
             Number of spaces for indentation (default 2)
         """
         # Look for indentation in first few lines
-        lines = json_content.split('\n')[:10]
+        lines = json_content.split("\n")[:10]
 
         for line in lines:
             # Look for lines that start with spaces

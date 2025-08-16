@@ -22,9 +22,9 @@ class MarkdownReplacer:
         self.jinja_env = Environment()
 
         # Add useful filters for markdown
-        self.jinja_env.filters['title'] = lambda s: s.replace('-', ' ').title()
-        self.jinja_env.filters['upper'] = lambda s: s.upper()
-        self.jinja_env.filters['lower'] = lambda s: s.lower()
+        self.jinja_env.filters["title"] = lambda s: s.replace("-", " ").title()
+        self.jinja_env.filters["upper"] = lambda s: s.upper()
+        self.jinja_env.filters["lower"] = lambda s: s.lower()
 
     def replace(self, file_path: Path, replacements: Dict[str, str]) -> str:
         """Apply replacements to a Markdown file.
@@ -41,7 +41,7 @@ class MarkdownReplacer:
         """
         try:
             # Read file content
-            with open(file_path, encoding='utf-8') as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
 
             # Apply each replacement
@@ -101,11 +101,11 @@ class MarkdownReplacer:
             Rendered string value
         """
         # Handle direct values (not templates)
-        if not ('{{' in template_expr and '}}' in template_expr):
+        if not ("{{" in template_expr and "}}" in template_expr):
             return template_expr
 
         # Render Jinja2 template
-        template = Template(template_expr, extensions=['jinja2.ext.do'])
+        template = Template(template_expr, extensions=["jinja2.ext.do"])
         result = template.render(values=self.parameters)
 
         return result
@@ -123,7 +123,7 @@ class MarkdownReplacer:
         """
         try:
             # Check if replacement has backreferences
-            if '\\' in replacement and any(f'\\{i}' in replacement for i in range(10)):
+            if "\\" in replacement and any(f"\\{i}" in replacement for i in range(10)):
                 # Use regex replacement with backreferences
                 return re.sub(pattern, replacement, content)
             else:

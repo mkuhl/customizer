@@ -397,8 +397,9 @@ def process(
                             err_msg = f"[red]Error processing {file_str}:[/red] {e}"
                             console.print(err_msg)
                     else:
-                        warn = (f"[yellow]Warning:[/yellow] "
-                                f"File not found: {file_str}")
+                        warn = (
+                            f"[yellow]Warning:[/yellow] " f"File not found: {file_str}"
+                        )
                         console.print(warn)
 
             # Process Markdown replacements
@@ -420,8 +421,10 @@ def process(
 
                                 # For dry-run, just show what would change
                                 if verbose or dry_run:
-                                    msg = (f"[green]External:[/green] "
-                               f"{file_str} (Markdown)")
+                                    msg = (
+                                        f"[green]External:[/green] "
+                                        f"{file_str} (Markdown)"
+                                    )
                                     console.print(msg)
                                     for pattern, _ in rules.items():
                                         pat_msg = f"  [blue]Pattern:[/blue] {pattern}"
@@ -434,13 +437,16 @@ def process(
                             err_msg = f"[red]Error processing {file_str}:[/red] {e}"
                             console.print(err_msg)
                     else:
-                        warn = (f"[yellow]Warning:[/yellow] "
-                                f"File not found: {file_str}")
+                        warn = (
+                            f"[yellow]Warning:[/yellow] " f"File not found: {file_str}"
+                        )
                         console.print(warn)
 
             if external_processed > 0:
-                msg = (f"[green]✓[/green] Processed {external_processed} "
-                       f"files with external replacements")
+                msg = (
+                    f"[green]✓[/green] Processed {external_processed} "
+                    f"files with external replacements"
+                )
                 console.print(msg)
 
         # Show results (including external replacements count)
@@ -448,8 +454,9 @@ def process(
         _show_results(all_changes, total_processed, skipped_files, dry_run, verbose)
 
         # Apply changes if not dry run
-        if not dry_run and (all_changes or external_changes or
-                             (output and files_to_copy)):
+        if not dry_run and (
+            all_changes or external_changes or (output and files_to_copy)
+        ):
             should_apply = yes or click.confirm("Apply these changes?")
             if should_apply:
                 # If output directory is specified, copy files first
@@ -494,12 +501,16 @@ def process(
                             file_path.write_text(new_content)
 
                             if verbose:
-                                msg = (f"[green]Applied:[/green] "
-                                       f"{file_path.name} (external)")
+                                msg = (
+                                    f"[green]Applied:[/green] "
+                                    f"{file_path.name} (external)"
+                                )
                                 console.print(msg)
                         except Exception as e:
-                            err = (f"[red]Failed to apply external "
-                                   f"changes to {file_path}:[/red] {e}")
+                            err = (
+                                f"[red]Failed to apply external "
+                                f"changes to {file_path}:[/red] {e}"
+                            )
                             console.print(err)
                             success = False
 
