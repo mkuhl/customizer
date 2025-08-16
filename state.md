@@ -1,7 +1,7 @@
 # Template Customizer - Project State
 
 ## Last Updated
-2025-08-10
+2025-08-16
 
 ## Project Overview
 - **Project**: Template Customizer - standalone Python tool for customizing project templates
@@ -10,11 +10,91 @@
 - **Package Manager**: uv
 - **Repository**: https://github.com/mkuhl/customizer
 - **CI Status**: ✅ All checks passing
-- **Latest Version**: v0.1.6 (2025-08-10)
-- **Docker Images**: `ghcr.io/mkuhl/customizer:0.1.6`, `ghcr.io/mkuhl/customizer:latest`
+- **Latest Version**: v0.3.1 (2025-08-16)
+- **Docker Images**: `ghcr.io/mkuhl/customizer:0.3.1`, `ghcr.io/mkuhl/customizer:latest`
 - **Native Binary**: Linux x86_64 executable with ~100ms startup time
 
 ## Current Session Major Accomplishments
+
+### 🐛 Critical Bug Fixes for External Replacements (2025-08-16)
+**Status: ✅ COMPLETE and RELEASED as v0.3.1**
+
+This session focused on resolving GitHub issue #4 - External Replacements failing with JSONPath docstring errors in v0.3.0. The issue was preventing users from using the new external replacements feature released in v0.3.0.
+
+#### **1. JSONPath Docstring Error Fix**
+- **Root Cause**: PyInstaller optimization level 2 (`--optimize=2`) was removing Python docstrings
+- **Impact**: The JSONPath library (`jsonpath-ng`) requires docstrings to function due to PLY parser dependency
+- **Solution**: Changed PyInstaller optimization from level 2 to level 1 in `template-customizer.spec`
+- **Result**: External replacements now work correctly without docstring errors
+- **Side Effect**: Optimization level 1 removes assert statements but preserves docstrings
+
+#### **2. Version Warning False Positives Fix**
+- **Root Cause**: Version compatibility checker incorrectly interpreted `project.version` fields as tool versions
+- **Impact**: Confusing warnings like "Configuration was created for version 2.0.0 but you're using version 0.3.0"
+- **Solution**: Made version detection regex more specific to only match root-level `version:` fields
+- **Result**: No more false positive warnings with project configuration versions
+- **Preservation**: Still shows legitimate warnings for actual customizer version mismatches
+
+#### **3. Build Script Consistency**
+- **Updated**: `scripts/build-native.sh` optimization level from 2 to 1 for consistency
+- **Quality**: All tests (108), linting, formatting, and type checking passed
+- **Testing**: Verified JSONPath external replacements work with both simple and complex expressions
+
+#### **4. Release Process**
+- **Version Bump**: Updated to v0.3.1 for this bugfix release
+- **GitHub Issue**: Updated issue #4 with detailed fix explanation and closed as completed
+- **CI/CD**: All 6 jobs passed successfully (test, quality, docker-build, native-linux, docker-publish, release)
+- **Assets**: Full release with native binary, Docker image, install script, and documentation
+
+### 🎯 External Replacements for JSON and Markdown (2025-08-16)
+**Status: ✅ COMPLETE and RELEASED as v0.3.0 (Fixed in v0.3.1)**
+
+This session focused on solving GitHub issue #3 - JSON file customization breaking valid JSON structure. The solution introduced a powerful new "External Replacements" feature that allows customizing files that don't support comment markers:
+
+#### **1. External Replacements Architecture**
+- **New Module Structure**: Created `core/external_replacements.py` and `core/replacers/` directory
+- **ExternalReplacementConfig**: Configuration parser for external replacement rules
+- **JSONReplacer**: JSONPath-based replacements preserving JSON structure and types
+- **MarkdownReplacer**: Pattern-based replacements for Markdown files
+- **Backward Compatibility**: Fully backward compatible with existing configurations
+
+#### **2. JSON File Support**
+- **JSONPath Expressions**: Use standard JSONPath to target specific values
+- **Type Preservation**: Maintains JSON types (strings, numbers, booleans, null)
+- **Format Preservation**: Detects and maintains original indentation
+- **Nested Path Support**: Can modify deeply nested values and arrays
+- **Path Creation**: Automatically creates missing paths when needed
+
+#### **3. Markdown File Support**
+- **Regex Patterns**: Flexible pattern matching for content replacement
+- **Literal Patterns**: Support for exact string replacement
+- **Capture Groups**: Advanced regex with backreferences
+- **Template Rendering**: Full Jinja2 template support in replacements
+
+#### **4. Configuration Format**
+```yaml
+replacements:
+  json:
+    package.json:
+      '$.name': '{{ values.project.name }}'
+      '$.dependencies.react': '^18.0.0'
+  markdown:
+    README.md:
+      'pattern: # .+': '# {{ values.project.name | title }}'
+      'Version: \\d+\\.\\d+\\.\\d+': 'Version: {{ values.project.version }}'
+```
+
+#### **5. Testing and Quality**
+- **26 Comprehensive Tests**: Full test coverage for external replacements
+- **Integration Tests**: End-to-end validation with real configurations
+- **Code Quality**: Fixed all linting, formatting, and type checking issues
+- **CI/CD**: All checks passing, successful release automation
+
+#### **6. Documentation Updates**
+- **README.md**: Added External Replacements section with examples
+- **docs/USAGE.md**: Detailed configuration and usage examples
+- **docs/ai-agents.md**: Added Pattern 6 for external replacements
+- **GitHub Issue #3**: Closed with comprehensive solution details
 
 ### 🚀 Native Binary Distribution & One-Liner Installation (2025-08-10)
 **Status: ✅ COMPLETE and OPERATIONAL**
@@ -116,21 +196,23 @@ Previous session focused on implementing automated Docker publishing to GHCR and
 #### **Branch Status**
 - **Current Branch**: `master`
 - **Main Branch**: `master` (active development)
-- **Latest Version**: v0.1.6 (2025-08-10)
+- **Latest Version**: v0.3.1 (2025-08-16)
 - **CI Status**: ✅ All checks passing on latest commit
 
 #### **Recent Commits Summary** (Latest Session)
 ```
-c63c12d Optimize documentation for AI agents and bump version to 0.1.6
-578c73a Add AI agents documentation and bump version to 0.1.5
-b4fe9ff Update project state documentation
-b6085f8 Reorganize documentation and bump version to 0.1.4
+1887570 Fix external replacements JSONPath docstring error and version warning
+6791ca1 Fix code quality issues for v0.3.0
+34bc167 Apply black formatting
+96d5d67 Fix linting issues for CI
+8ca738d Add external replacements support for JSON and Markdown files
+9d3e6c8 Fix incorrect marker syntax in documentation
 ```
 
 ### 🛠️ Development Environment
 
 #### **Package Dependencies**
-- **Runtime**: jinja2, pyyaml, click, rich
+- **Runtime**: jinja2, pyyaml, click, rich, jsonpath-ng (NEW in v0.3.0)
 - **Development**: pytest, pytest-cov, black, ruff, mypy, types-PyYAML
 - **Build**: pyinstaller (for native binary generation)
 - **All dependencies**: Successfully installed and functioning
@@ -145,22 +227,22 @@ b6085f8 Reorganize documentation and bump version to 0.1.4
 
 ## Current Session Summary
 
-### 🎯 Session Accomplishments (2025-08-10)
-1. ✅ **Native Binary Support**: Implemented PyInstaller-based single-file executable for Linux x86_64
-2. ✅ **Performance Enhancement**: Achieved ~100ms startup time (20-30x faster than Docker)
-3. ✅ **One-Liner Installation**: Created comprehensive install script with system detection and verification
-4. ✅ **Improved Naming**: Renamed binaries for clarity (customizer = native, run-docker-customizer.sh = Docker)
-5. ✅ **CI/CD Enhancement**: Added native-linux job to build and test binaries automatically
-6. ✅ **Documentation Overhaul**: Updated all docs to prioritize native binary installation
-7. ✅ **Release Distribution**: Enhanced GitHub releases with multiple installation options
-8. ✅ **AI Agent Integration**: Completely rewrote ai-agents.md for native binary automation
+### 🎯 Session Accomplishments (2025-08-16)
+1. ✅ **JSONPath Bug Fix**: Resolved critical external replacements docstring error in v0.3.0
+2. ✅ **Version Warning Fix**: Eliminated confusing false positive version compatibility warnings
+3. ✅ **PyInstaller Optimization**: Changed from level 2 to level 1 to preserve docstrings
+4. ✅ **GitHub Issue #4**: Closed with detailed fix explanation and verification
+5. ✅ **Build Consistency**: Updated both spec file and build script optimization levels
+6. ✅ **Quality Assurance**: All 108 tests, linting, formatting, and type checking passed
+7. ✅ **External Replacements**: Verified working correctly with JSONPath expressions
+8. ✅ **Version 0.3.1**: Successfully released bugfix version with automated CI/CD pipeline
 
 ## Next Recommended Actions
 
 ### 🎯 Immediate (High Priority)
-1. **Cross-Platform Expansion**: Add native binary support for macOS and Windows
-2. **Performance Optimization**: Further optimize binary size and startup time
-3. **User Feedback**: Gather feedback on native binary installation and performance
+1. **More File Types**: Add external replacements for XML, TOML, INI files
+2. **Cross-Platform Expansion**: Add native binary support for macOS and Windows
+3. **User Feedback**: Gather feedback on external replacements feature
 
 ### 📈 Future Enhancements (Medium Priority)
 1. **ARM64 Support**: Add ARM64 Linux binary for Raspberry Pi and ARM servers
@@ -178,7 +260,7 @@ b6085f8 Reorganize documentation and bump version to 0.1.4
 1. **One-Liner Installation**: `curl -fsSL https://github.com/mkuhl/customizer/releases/latest/download/install.sh | sh`
 2. **Manual Binary**: Download `customizer-linux-x64.tar.gz` from releases
 3. **Docker Wrapper**: Download `run-docker-customizer.sh` from releases
-4. **Direct Docker**: `docker run --rm -v $PWD:/workdir ghcr.io/mkuhl/customizer:latest`
+4. **Direct Docker**: `docker run --rm -v $PWD:/workdir ghcr.io/mkuhl/customizer:0.3.1`
 
 ### ⚡ Performance Comparison
 | Method | Startup Time | Size | Requirements |
@@ -215,6 +297,14 @@ b6085f8 Reorganize documentation and bump version to 0.1.4
 
 ## Important Notes for Future Sessions
 
+### 🆕 External Replacements Feature (v0.3.0+)
+- **Configuration Key**: Use `replacements:` section in config files
+- **JSON Files**: Use JSONPath expressions (e.g., `$.name`, `$.dependencies.react`)
+- **Markdown Files**: Use regex patterns or literal strings with `pattern:` or `literal:` prefixes
+- **Type Preservation**: JSON values maintain their types (string, number, boolean, null)
+- **Template Support**: Full Jinja2 template rendering in replacement values
+- **Backward Compatible**: Existing configurations continue to work unchanged
+
 ### 🔐 CI/CD Pipeline
 - **GitHub Actions workflow** enhanced with 6 parallel jobs including native binary builds
 - **Native Binary Builds** automated with PyInstaller in `native-linux` job
@@ -244,11 +334,13 @@ The Template Customizer has successfully evolved to enterprise-grade multi-platf
 - ✅ **Cross-Platform Ready** - Infrastructure prepared for macOS/Windows expansion
 - ✅ **Professional UX** - Clear installation options with performance comparison
 
-**Current Status**: v0.1.6 released with native binary distribution and one-liner installation.
+**Current Status**: v0.3.1 released with critical bug fixes for external replacements feature.
 
 The Template Customizer now offers the best of both worlds: blazing-fast native performance for Linux users and Docker compatibility for cross-platform consistency. The project has achieved enterprise-level distribution capabilities with multiple installation methods and comprehensive automation support.
 
 **Installation Evolution**:
 - v0.1.0-0.1.3: Python package installation
 - v0.1.4-0.1.5: Docker-first approach with GHCR publishing  
-- v0.1.6+: **Native binary priority** with one-liner installation and Docker fallback
+- v0.1.6-0.2.2: Native binary priority with one-liner installation and Docker fallback
+- v0.3.0+: **External replacements** for JSON/Markdown files without comment markers
+- v0.3.1: **Critical bug fixes** for JSONPath docstring errors and version warnings
