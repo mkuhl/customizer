@@ -387,8 +387,8 @@ def process(
                                     msg = f"[green]External:[/green] {file_str} (JSON)"
                                     console.print(msg)
                                     for jsonpath, _ in rules.items():
-                                        path_msg = f"  [blue]JSONPath:[/blue] {jsonpath}"
-                                        console.print(path_msg)
+                                        msg2 = f"  [blue]JSONPath:[/blue] {jsonpath}"
+                                        console.print(msg2)
 
                                 # Store change for application
                                 if not dry_run:
@@ -397,8 +397,9 @@ def process(
                             err_msg = f"[red]Error processing {file_str}:[/red] {e}"
                             console.print(err_msg)
                     else:
-                        warn_msg = f"[yellow]Warning:[/yellow] File not found: {file_str}"
-                        console.print(warn_msg)
+                        warn = (f"[yellow]Warning:[/yellow] "
+                                f"File not found: {file_str}")
+                        console.print(warn)
 
             # Process Markdown replacements
             md_replacements = ext_config.get_markdown_replacements()
@@ -419,7 +420,8 @@ def process(
 
                                 # For dry-run, just show what would change
                                 if verbose or dry_run:
-                                    msg = f"[green]External:[/green] {file_str} (Markdown)"
+                                    msg = (f"[green]External:[/green] "
+                               f"{file_str} (Markdown)")
                                     console.print(msg)
                                     for pattern, _ in rules.items():
                                         pat_msg = f"  [blue]Pattern:[/blue] {pattern}"
@@ -432,11 +434,13 @@ def process(
                             err_msg = f"[red]Error processing {file_str}:[/red] {e}"
                             console.print(err_msg)
                     else:
-                        warn_msg = f"[yellow]Warning:[/yellow] File not found: {file_str}"
-                        console.print(warn_msg)
+                        warn = (f"[yellow]Warning:[/yellow] "
+                                f"File not found: {file_str}")
+                        console.print(warn)
 
             if external_processed > 0:
-                msg = f"[green]✓[/green] Processed {external_processed} files with external replacements"
+                msg = (f"[green]✓[/green] Processed {external_processed} "
+                       f"files with external replacements")
                 console.print(msg)
 
         # Show results (including external replacements count)
@@ -444,7 +448,8 @@ def process(
         _show_results(all_changes, total_processed, skipped_files, dry_run, verbose)
 
         # Apply changes if not dry run
-        if not dry_run and (all_changes or external_changes or (output and files_to_copy)):
+        if not dry_run and (all_changes or external_changes or
+                             (output and files_to_copy)):
             should_apply = yes or click.confirm("Apply these changes?")
             if should_apply:
                 # If output directory is specified, copy files first
@@ -489,10 +494,12 @@ def process(
                             file_path.write_text(new_content)
 
                             if verbose:
-                                msg = f"[green]Applied:[/green] {file_path.name} (external)"
+                                msg = (f"[green]Applied:[/green] "
+                                       f"{file_path.name} (external)")
                                 console.print(msg)
                         except Exception as e:
-                            err = f"[red]Failed to apply external changes to {file_path}:[/red] {e}"
+                            err = (f"[red]Failed to apply external "
+                                   f"changes to {file_path}:[/red] {e}")
                             console.print(err)
                             success = False
 

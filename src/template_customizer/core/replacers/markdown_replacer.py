@@ -14,7 +14,7 @@ class MarkdownReplacer:
 
     def __init__(self, parameters: Dict[str, Any]):
         """Initialize Markdown replacer with parameters for template rendering.
-        
+
         Args:
             parameters: Configuration parameters for template rendering
         """
@@ -28,14 +28,14 @@ class MarkdownReplacer:
 
     def replace(self, file_path: Path, replacements: Dict[str, str]) -> str:
         """Apply replacements to a Markdown file.
-        
+
         Args:
             file_path: Path to Markdown file
             replacements: Dictionary of patterns to template expressions
-            
+
         Returns:
             Modified Markdown content as string
-            
+
         Raises:
             ExternalReplacementError: If file reading or replacement fails
         """
@@ -54,11 +54,16 @@ class MarkdownReplacer:
 
                 # Apply pattern replacement
                 if pattern_type == "pattern":
-                    content = self._apply_regex_pattern(content, pattern, rendered_value)
+                    content = self._apply_regex_pattern(
+                        content, pattern, rendered_value
+                    )
                 elif pattern_type == "literal":
-                    content = self._apply_literal_pattern(content, pattern, rendered_value)
+                    content = self._apply_literal_pattern(
+                        content, pattern, rendered_value
+                    )
                 else:
-                    raise ExternalReplacementError(f"Unknown pattern type: {pattern_type}")
+                    msg = f"Unknown pattern type: {pattern_type}"
+                    raise ExternalReplacementError(msg)
 
             return content
 
@@ -71,10 +76,10 @@ class MarkdownReplacer:
 
     def _parse_pattern_spec(self, pattern_spec: str) -> tuple[str, str]:
         """Parse pattern specification into type and pattern.
-        
+
         Args:
             pattern_spec: Pattern specification ("pattern: foo.*", "literal: [test]")
-            
+
         Returns:
             Tuple of (pattern_type, pattern)
         """
@@ -88,10 +93,10 @@ class MarkdownReplacer:
 
     def _render_template(self, template_expr: str) -> str:
         """Render a Jinja2 template expression.
-        
+
         Args:
             template_expr: Template expression to render
-            
+
         Returns:
             Rendered string value
         """
@@ -107,12 +112,12 @@ class MarkdownReplacer:
 
     def _apply_regex_pattern(self, content: str, pattern: str, replacement: str) -> str:
         """Apply regex pattern replacement.
-        
+
         Args:
             content: Original content
             pattern: Regex pattern to match
             replacement: Replacement string (may contain backreferences)
-            
+
         Returns:
             Modified content
         """
@@ -132,12 +137,12 @@ class MarkdownReplacer:
         self, content: str, pattern: str, replacement: str
     ) -> str:
         """Apply literal string replacement (no regex).
-        
+
         Args:
             content: Original content
             pattern: Literal string to match
             replacement: Replacement string
-            
+
         Returns:
             Modified content
         """

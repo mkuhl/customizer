@@ -17,7 +17,7 @@ class JSONReplacer:
 
     def __init__(self, parameters: Dict[str, Any]):
         """Initialize JSON replacer with parameters for template rendering.
-        
+
         Args:
             parameters: Configuration parameters for template rendering
         """
@@ -26,14 +26,14 @@ class JSONReplacer:
 
     def replace(self, file_path: Path, replacements: Dict[str, Any]) -> str:
         """Apply replacements to a JSON file.
-        
+
         Args:
             file_path: Path to JSON file
             replacements: Dictionary of JSONPath to template expressions
-            
+
         Returns:
             Modified JSON content as string
-            
+
         Raises:
             ExternalReplacementError: If JSON parsing or replacement fails
         """
@@ -66,10 +66,10 @@ class JSONReplacer:
 
     def _render_template(self, template_expr: Any) -> Any:
         """Render a Jinja2 template expression.
-        
+
         Args:
-            template_expr: Template expression to render (can be string, bool, number, etc.)
-            
+            template_expr: Template expression (string, bool, number, etc.)
+
         Returns:
             Rendered value (could be string, number, boolean, etc.)
         """
@@ -107,12 +107,12 @@ class JSONReplacer:
 
     def _apply_jsonpath(self, data: Any, jsonpath: str, value: Any) -> Any:
         """Apply a JSONPath replacement to data.
-        
+
         Args:
             data: JSON data structure
             jsonpath: JSONPath expression
             value: Value to set
-            
+
         Returns:
             Modified data structure
         """
@@ -137,7 +137,7 @@ class JSONReplacer:
 
     def _create_path(self, data: Any, jsonpath: str, value: Any) -> None:
         """Create a new path in JSON data.
-        
+
         Args:
             data: JSON data structure
             jsonpath: JSONPath expression
@@ -204,10 +204,10 @@ class JSONReplacer:
 
     def _detect_indent(self, json_content: str) -> int:
         """Detect indentation level from JSON content.
-        
+
         Args:
             json_content: Original JSON content
-            
+
         Returns:
             Number of spaces for indentation (default 2)
         """

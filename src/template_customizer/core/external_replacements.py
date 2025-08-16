@@ -14,16 +14,16 @@ class ExternalReplacementConfig:
 
     def __init__(self, config: Dict[str, Any]):
         """Initialize with configuration dictionary.
-        
+
         Args:
-            config: Full configuration dictionary that may contain 'replacements' section
+            config: Configuration dictionary with optional 'replacements' section
         """
         self.config = config
         self.replacements = config.get("replacements", {})
 
     def has_replacements(self) -> bool:
         """Check if any external replacements are defined.
-        
+
         Returns:
             True if replacements section exists and has content
         """
@@ -31,7 +31,7 @@ class ExternalReplacementConfig:
 
     def get_json_replacements(self) -> Dict[str, Dict[str, str]]:
         """Get JSON file replacement rules.
-        
+
         Returns:
             Dictionary mapping file paths to their JSONPath replacements
         """
@@ -39,7 +39,7 @@ class ExternalReplacementConfig:
 
     def get_markdown_replacements(self) -> Dict[str, Dict[str, str]]:
         """Get Markdown file replacement rules.
-        
+
         Returns:
             Dictionary mapping file paths to their pattern replacements
         """
@@ -47,7 +47,7 @@ class ExternalReplacementConfig:
 
     def get_files_to_process(self) -> List[Path]:
         """Get list of all files that have replacement rules.
-        
+
         Returns:
             List of Path objects for files with replacements
         """
@@ -65,10 +65,10 @@ class ExternalReplacementConfig:
 
     def get_file_type(self, file_path: Path) -> Optional[str]:
         """Determine the replacement type for a given file.
-        
+
         Args:
             file_path: Path to check
-            
+
         Returns:
             'json', 'markdown', or None if no replacements defined
         """
@@ -83,10 +83,10 @@ class ExternalReplacementConfig:
 
     def get_replacements_for_file(self, file_path: Path) -> Optional[Dict[str, str]]:
         """Get replacement rules for a specific file.
-        
+
         Args:
             file_path: Path to get replacements for
-            
+
         Returns:
             Dictionary of replacement rules or None if no rules defined
         """
