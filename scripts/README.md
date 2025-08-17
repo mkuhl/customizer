@@ -1,6 +1,44 @@
-# Template Customizer Build Scripts
+# Template Customizer Scripts
 
-This directory contains scripts for building and managing the Template Customizer with centralized version management.
+This directory contains scripts for building, managing, and automating releases of the Template Customizer with centralized version management.
+
+## Release Automation System
+
+The `release-automation.py` script provides a generic, extensible framework for automating release-related tasks that need to happen during releases (like updating version badges, changelogs, etc.).
+
+### Available Tasks
+- **`update-version-badge`** - Updates version badge in README.md
+- **`update-changelog`** - Updates CHANGELOG.md (placeholder for future implementation)
+- **`update-docker-tags`** - Updates Docker documentation (placeholder for future implementation)
+
+### Usage
+```bash
+# List available automation tasks
+python scripts/release-automation.py list
+
+# Run specific task
+python scripts/release-automation.py update-version-badge 0.4.0
+
+# Run all automation tasks  
+python scripts/release-automation.py all 0.4.0
+```
+
+### Adding New Tasks
+To add a new release automation task:
+
+1. Add a new method to the `ReleaseAutomation` class in `release-automation.py`
+2. Register it in the `self.tasks` dictionary in `__init__`
+3. The method should return `Tuple[bool, str]` (success, message)
+
+Example:
+```python
+def update_my_feature(self, version: str) -> Tuple[bool, str]:
+    # Your automation logic here
+    return True, f"My feature updated to {version}"
+
+# In __init__:
+self.tasks['update-my-feature'] = self.update_my_feature
+```
 
 ## Version Management
 
