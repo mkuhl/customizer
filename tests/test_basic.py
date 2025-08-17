@@ -101,6 +101,7 @@ def test_file_type_detector_basic():
     # Test common file types
     assert detector.detect_comment_type(Path("test.py")) == "hash"
     assert detector.detect_comment_type(Path("test.js")) == "double_slash"
+    assert detector.detect_comment_type(Path("test.vue")) == "double_slash"
     assert detector.detect_comment_type(Path("test.css")) == "css"
     assert detector.detect_comment_type(Path("test.html")) == "html"
     assert detector.detect_comment_type(Path("Dockerfile")) == "hash"

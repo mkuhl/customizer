@@ -29,6 +29,7 @@ class FileTypeDetector:
         ".ts": "double_slash",
         ".tsx": "double_slash",
         ".mjs": "double_slash",
+        ".vue": "double_slash",
         # Java/C/C++
         ".java": "double_slash",
         ".c": "double_slash",
