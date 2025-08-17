@@ -13,6 +13,7 @@ services:
       - ~/.claude.json:/home/vscode/.claude.json:cached
       # Git configuration and SSH keys from host
       - ~/.ssh:/home/vscode/.ssh:cached
+      - ~/.config/gh:/home/vscode/.config/gh:cached
     command: sleep infinity
     environment:
       - PYTHONPATH=/workspace
