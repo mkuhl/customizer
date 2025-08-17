@@ -194,3 +194,5 @@ Use the py-ang project as validation target by:
 - Only commit when explicitly asked to do so by the user
 - NEVER commit to master unless specifically asked to do so. Changes to master should always be merged from feature branches
 - When committing, use simple commit messages without the automated "Generated with Claude Code" footer
+- IMPORTANT: before commit: ALWAYS run formatter and linter
+- ALWAYS use compact non-epic commit messages
