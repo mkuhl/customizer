@@ -4,7 +4,7 @@
 
 **OPTIMIZATION**: Structured as executable decision trees with validation checkpoints for deterministic execution.
 
-**VERSION**: 0.3.0 (with External Replacements)
+**VERSION**: 0.4.0 (with Self-Referencing YAML Values)
 **NATIVE BINARY**: https://github.com/mkuhl/customizer/releases/latest/download/customizer-linux-x64.tar.gz
 **METHOD**: Native Linux executable (primary) with Docker fallback (legacy)
 
@@ -242,11 +242,14 @@ except:
 # Pre-check:
 test -f config.yml && grep -q "{{ values\." . || exit 1
 
-# Execute dry-run first:
-customizer process --config config.yml --dry-run
+# Execute dry-run first (with verbose mode for self-referencing configs):
+customizer process --config config.yml --verbose --dry-run
 
 # If dry-run looks good, execute:
 customizer process --config config.yml --yes
+
+# For troubleshooting reference resolution, disable it:
+customizer process --config config.yml --no-resolve-refs --dry-run
 
 # Verify success:
 grep -r "{{ values\." . | wc -l  # Should return 0
@@ -486,6 +489,42 @@ docker:
   tag: "latest"
 ```
 
+### Self-Referencing Configuration Values (New in v0.4.0)
+
+Use `{{ values.path.to.value }}` syntax to reference other values within the same configuration:
+
+```yaml
+# Base values
+project:
+  name: "microservice-api"
+  version: "2.1.0"
+  environment: "production"
+
+# Self-referencing values
+docker:
+  registry: "ghcr.io/mycompany"
+  image: "{{ values.docker.registry }}/{{ values.project.name }}:{{ values.project.version }}"
+
+database:
+  name: "{{ values.project.name | replace('-', '_') }}_{{ values.project.environment }}"
+  host: "{{ values.project.name }}-{{ values.project.environment }}.cluster.amazonaws.com"
+
+api:
+  base_url: "https://{{ values.project.name }}.{{ values.project.environment }}.example.com"
+  health_check: "{{ values.api.base_url }}/health"
+
+monitoring:
+  namespace: "{{ values.project.name }}/{{ values.project.environment }}"
+```
+
+**Key Features:**
+- **Reference Resolution**: Automatic dependency resolution in any order
+- **Chained References**: References can reference other references
+- **Jinja2 Filters**: Apply transformations like `| lower | replace('-', '_')`
+- **Type Preservation**: Maintains original types (strings, numbers, booleans, lists)
+- **Circular Detection**: Clear error messages for circular dependencies
+- **Performance**: Fast resolution with caching and optimization
+
 ### JSON Configuration Alternative
 ```json
 {
@@ -501,7 +540,105 @@ docker:
 
 ## ERROR_HANDLING_PATTERNS
 
-### Error Type 1: Missing Configuration Values
+### Error Type 1: Circular Reference Detection (New in v0.4.0)
+```bash
+# SYMPTOM_PATTERN: "Circular dependency detected"
+# Example output:
+# ❌ Circular dependency detected in configuration file 'config.yml':
+#    Circular dependency detected: a → b → c → a
+
+# DIAGNOSIS:
+# Check configuration for circular references
+circular_refs=$(customizer process --verbose --dry-run 2>&1 | \
+    grep "Circular dependency" | \
+    sed -n 's/.*: \(.*\)/\1/p')
+
+# RECOVERY:
+# Step 1: Identify the circular chain
+echo "Circular reference chain: $circular_refs"
+
+# Step 2: Break the cycle by making one value independent
+# Example: If a → b → c → a, make 'a' a literal value
+sed -i 's/a: "{{ values\..*}}"/a: "literal_value"/' config.yml
+
+# Step 3: Test resolution
+customizer process --verbose --dry-run
+
+# VALIDATION:
+test $(customizer process --dry-run 2>&1 | grep -c "Circular dependency") -eq 0 && echo "✓ Circular references resolved"
+```
+
+### Error Type 2: Missing Reference Values (New in v0.4.0)
+```bash
+# SYMPTOM_PATTERN: "Reference.*not found"
+# Example output:
+# ❌ Reference resolution failed: Reference 'values.missing.value' not found
+
+# DIAGNOSIS:
+missing_refs=$(customizer process --verbose --dry-run 2>&1 | \
+    grep "Reference.*not found" | \
+    sed -n "s/.*'values\.\([^']*\).*/\1/p")
+
+# RECOVERY:
+# Step 1: Add missing values to config
+for ref in $missing_refs; do
+    echo "Adding missing reference: $ref"
+    # Parse path and add to YAML
+    IFS='.' read -ra PARTS <<< "$ref"
+    if [[ ${#PARTS[@]} -eq 1 ]]; then
+        echo "${PARTS[0]}: \"PLACEHOLDER_${PARTS[0]}\"" >> config.yml
+    elif [[ ${#PARTS[@]} -eq 2 ]]; then
+        echo "${PARTS[0]}:" >> config.yml
+        echo "  ${PARTS[1]}: \"PLACEHOLDER_${PARTS[1]}\"" >> config.yml
+    fi
+done
+
+# Step 2: Update placeholders
+echo "ACTION_REQUIRED: Update PLACEHOLDER values in config.yml"
+
+# VALIDATION:
+test $(customizer process --dry-run 2>&1 | grep -c "Reference.*not found") -eq 0 && echo "✓ All references resolved"
+```
+
+### Error Type 3: Template Syntax Errors in References (New in v0.4.0)
+```bash
+# SYMPTOM_PATTERN: "Template syntax error|Invalid template syntax"
+# Example: Invalid template syntax: No filter named 'invalid_filter'
+
+# DIAGNOSIS:
+syntax_errors=$(customizer process --verbose --dry-run 2>&1 | \
+    grep -i "template syntax error" | \
+    head -5)
+
+# RECOVERY:
+# Fix common reference syntax errors
+sed -i 's/{{ values\.\([^}]*\) | invalid_filter/{{ values.\1 | lower/g' config.yml  # Fix invalid filters
+sed -i 's/{{values\./{{ values./g' config.yml                                        # Add space after {{
+sed -i 's/\.}}/}}/g' config.yml                                                      # Remove trailing dots
+
+# VALIDATION:
+python3 -c "
+import yaml
+from jinja2 import Template
+with open('config.yml') as f:
+    config = yaml.safe_load(f)
+    
+def check_references(obj, path=''):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            check_references(v, f'{path}.{k}' if path else k)
+    elif isinstance(obj, str) and '{{' in obj:
+        try:
+            Template(obj)
+            print(f'✓ Valid template: {path} = {obj}')
+        except Exception as e:
+            print(f'✗ Invalid template: {path} = {obj} - {e}')
+
+check_references(config)
+"
+```
+
+### Error Type 4: Missing Configuration Values
 ```bash
 # SYMPTOM_PATTERN: "Warning:.*has [0-9]+ missing values"
 # Example output:

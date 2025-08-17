@@ -1,0 +1,192 @@
+# Template Customizer Configuration Example: Microservice Application
+# This example demonstrates self-referencing YAML values for a microservice deployment
+
+# ============================================================================
+# PROJECT METADATA (Base Values)
+# ============================================================================
+project:
+  name: "customer-api"
+  version: "2.1.3"
+  description: "Customer management microservice"
+  environment: "production"
+  team: "platform"
+
+# Company and infrastructure settings
+organization:
+  name: "acme-corp"
+  domain: "acme.com"
+  region: "us-east-1"
+
+# ============================================================================
+# COMPUTED VALUES (Built from base metadata)
+# ============================================================================
+computed:
+  # Short environment name for resource naming
+  env_short: "{{ values.project.environment[:4] }}"  # "prod"
+  
+  # Application prefix for consistent naming
+  app_prefix: "{{ values.project.name }}-{{ values.computed.env_short }}"
+  
+  # Full application name with organization
+  full_name: "{{ values.organization.name }}-{{ values.project.name }}"
+  
+  # Database name (replace hyphens with underscores for SQL compatibility)
+  db_name: "{{ values.project.name | replace('-', '_') }}_{{ values.project.environment }}"
+
+# ============================================================================
+# AWS INFRASTRUCTURE
+# ============================================================================
+aws:
+  account_id: "123456789012"
+  region: "{{ values.organization.region }}"
+  
+  # ECR registry URL
+  ecr_registry: "{{ values.aws.account_id }}.dkr.ecr.{{ values.aws.region }}.amazonaws.com"
+  
+  # VPC and networking
+  vpc_name: "{{ values.computed.app_prefix }}-vpc"
+  cluster_name: "{{ values.computed.app_prefix }}-cluster"
+
+# ============================================================================
+# SERVICE DEFINITIONS
+# ============================================================================
+services:
+  api:
+    name: "{{ values.computed.app_prefix }}-api"
+    port: 8080
+    replicas: 3
+    image: "{{ values.aws.ecr_registry }}/{{ values.services.api.name }}:{{ values.project.version }}"
+    url: "https://{{ values.services.api.name }}.{{ values.organization.domain }}"
+    health_check: "{{ values.services.api.url }}/health"
+    
+  frontend:
+    name: "{{ values.computed.app_prefix }}-web"
+    port: 3000
+    replicas: 2
+    image: "{{ values.aws.ecr_registry }}/{{ values.services.frontend.name }}:{{ values.project.version }}"
+    url: "https://{{ values.services.frontend.name }}.{{ values.organization.domain }}"
+    
+  worker:
+    name: "{{ values.computed.app_prefix }}-worker"
+    replicas: 2
+    image: "{{ values.aws.ecr_registry }}/{{ values.services.worker.name }}:{{ values.project.version }}"
+
+# ============================================================================
+# DATABASE CONFIGURATION
+# ============================================================================
+database:
+  # RDS endpoint using computed naming
+  host: "{{ values.computed.app_prefix }}.cluster-xyz.{{ values.aws.region }}.rds.amazonaws.com"
+  name: "{{ values.computed.db_name }}"
+  port: 5432
+  
+  # Connection string with all components
+  connection_string: "postgresql://app:secret@{{ values.database.host }}:{{ values.database.port }}/{{ values.database.name }}"
+  
+  # Backup configuration
+  backup_bucket: "{{ values.computed.app_prefix }}-database-backups"
+
+# ============================================================================
+# MONITORING AND OBSERVABILITY
+# ============================================================================
+monitoring:
+  # CloudWatch namespace
+  namespace: "{{ values.project.name }}/{{ values.project.environment }}"
+  
+  # Service endpoints for health checks
+  endpoints:
+    api_health: "{{ values.services.api.health_check }}"
+    frontend_health: "{{ values.services.frontend.url }}/health"
+    
+  # Logging configuration
+  log_group: "/aws/ecs/{{ values.computed.app_prefix }}"
+  
+  # Metrics and alerting
+  dashboard_url: "https://monitoring.{{ values.organization.domain }}/dashboards/{{ values.computed.app_prefix }}"
+
+# ============================================================================
+# SECURITY AND NETWORKING
+# ============================================================================
+security:
+  # IAM role names
+  api_role: "{{ values.computed.app_prefix }}-api-role"
+  worker_role: "{{ values.computed.app_prefix }}-worker-role"
+  
+  # Security groups
+  api_sg: "{{ values.computed.app_prefix }}-api-sg"
+  database_sg: "{{ values.computed.app_prefix }}-db-sg"
+  
+  # Secrets manager
+  database_secret: "{{ values.computed.app_prefix }}/database"
+  api_secret: "{{ values.computed.app_prefix }}/api-keys"
+
+# ============================================================================
+# EXTERNAL INTEGRATIONS
+# ============================================================================
+external:
+  # CDN configuration
+  cdn:
+    domain: "cdn.{{ values.organization.domain }}"
+    static_assets: "{{ values.external.cdn.domain }}/{{ values.project.name }}/{{ values.project.version }}"
+  
+  # Third-party services
+  redis:
+    cluster: "{{ values.computed.app_prefix }}-redis"
+    endpoint: "{{ values.external.redis.cluster }}.cache.{{ values.aws.region }}.amazonaws.com"
+  
+  # API Gateway
+  api_gateway:
+    name: "{{ values.computed.app_prefix }}-gateway"
+    domain: "api.{{ values.organization.domain }}"
+    stage: "{{ values.project.environment }}"
+
+# ============================================================================
+# DEPLOYMENT CONFIGURATION
+# ============================================================================
+deployment:
+  # Environment variables for containers
+  environment_variables:
+    APP_NAME: "{{ values.project.name }}"
+    APP_VERSION: "{{ values.project.version }}"
+    DATABASE_URL: "{{ values.database.connection_string }}"
+    REDIS_URL: "{{ values.external.redis.endpoint }}"
+    API_GATEWAY_URL: "https://{{ values.external.api_gateway.domain }}/{{ values.external.api_gateway.stage }}"
+  
+  # Resource limits
+  resources:
+    api_cpu: "1000m"
+    api_memory: "2Gi"
+    worker_cpu: "500m"
+    worker_memory: "1Gi"
+  
+  # Auto-scaling
+  scaling:
+    api_min: 2
+    api_max: 10
+    worker_min: 1
+    worker_max: 5
+
+# ============================================================================
+# EXTERNAL REPLACEMENTS (for JSON/Markdown files)
+# ============================================================================
+replacements:
+  json:
+    # Package.json for Node.js services
+    "package.json":
+      "$.name": "{{ values.project.name }}"
+      "$.version": "{{ values.project.version }}"
+      "$.description": "{{ values.project.description }}"
+    
+    # Docker Compose configuration
+    "docker-compose.yml.json":
+      "$.services.api.image": "{{ values.services.api.image }}"
+      "$.services.frontend.image": "{{ values.services.frontend.image }}"
+      "$.services.worker.image": "{{ values.services.worker.image }}"
+  
+  markdown:
+    # README.md updates
+    "README.md":
+      "pattern: # Project Name": "# {{ values.project.name | title | replace('-', ' ') }}"
+      "pattern: Version: .*": "Version: {{ values.project.version }}"
+      "pattern: Environment: .*": "Environment: {{ values.project.environment | title }}"
+      "literal: [DESCRIPTION_PLACEHOLDER]": "{{ values.project.description }}"

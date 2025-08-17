@@ -1,0 +1,296 @@
+# Template Customizer Configuration Example: Kubernetes/Helm Values
+# This example demonstrates self-referencing values for Kubernetes deployments
+
+# ============================================================================
+# GLOBAL CONFIGURATION
+# ============================================================================
+global:
+  # Registry and image settings
+  imageRegistry: "ghcr.io/company"
+  imageTag: "v2.3.1"
+  imagePullPolicy: "IfNotPresent"
+  
+  # Cluster and namespace
+  clusterName: "production-cluster"
+  namespace: "ecommerce-prod"
+  region: "us-west-2"
+
+# ============================================================================
+# APPLICATION METADATA
+# ============================================================================
+app:
+  name: "ecommerce"
+  version: "{{ values.global.imageTag }}"
+  environment: "production"
+  
+  # Computed application names
+  fullName: "{{ values.global.namespace }}-{{ values.app.name }}"
+  shortName: "{{ values.app.name }}-{{ values.app.environment[:4] }}"  # "ecommerce-prod"
+
+# ============================================================================
+# SERVICE DEFINITIONS
+# ============================================================================
+services:
+  frontend:
+    name: "{{ values.app.name }}-frontend"
+    fullName: "{{ values.app.fullName }}-frontend"
+    port: 3000
+    targetPort: 3000
+    type: "ClusterIP"
+    image: "{{ values.global.imageRegistry }}/{{ values.services.frontend.name }}:{{ values.global.imageTag }}"
+    replicas: 3
+    
+  api:
+    name: "{{ values.app.name }}-api"
+    fullName: "{{ values.app.fullName }}-api"
+    port: 8080
+    targetPort: 8080
+    type: "ClusterIP"
+    image: "{{ values.global.imageRegistry }}/{{ values.services.api.name }}:{{ values.global.imageTag }}"
+    replicas: 2
+    
+  worker:
+    name: "{{ values.app.name }}-worker"
+    fullName: "{{ values.app.fullName }}-worker"
+    image: "{{ values.global.imageRegistry }}/{{ values.services.worker.name }}:{{ values.global.imageTag }}"
+    replicas: 1
+
+# ============================================================================
+# INGRESS CONFIGURATION
+# ============================================================================
+ingress:
+  enabled: true
+  className: "nginx"
+  
+  # Hostnames and routing
+  hosts:
+    frontend: "{{ values.app.name }}.company.com"
+    api: "api-{{ values.app.name }}.company.com"
+  
+  # TLS configuration
+  tls:
+    enabled: true
+    secretName: "{{ values.app.fullName }}-tls"
+    
+  # Annotations
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+# ============================================================================
+# STORAGE AND PERSISTENCE
+# ============================================================================
+persistence:
+  # Persistent Volume Claims
+  database:
+    enabled: true
+    storageClass: "gp2"
+    size: "100Gi"
+    accessMode: "ReadWriteOnce"
+    name: "{{ values.app.fullName }}-database-pvc"
+    
+  uploads:
+    enabled: true
+    storageClass: "gp2"
+    size: "50Gi"
+    accessMode: "ReadWriteMany"
+    name: "{{ values.app.fullName }}-uploads-pvc"
+
+# ============================================================================
+# DATABASE CONFIGURATION
+# ============================================================================
+database:
+  # PostgreSQL settings
+  postgresql:
+    enabled: true
+    name: "{{ values.app.name | replace('-', '_') }}_{{ values.app.environment }}"
+    host: "{{ values.app.fullName }}-postgresql"
+    port: 5432
+    database: "{{ values.database.postgresql.name }}"
+    
+  # Connection details
+  connection:
+    url: "postgresql://postgres:password@{{ values.database.postgresql.host }}:{{ values.database.postgresql.port }}/{{ values.database.postgresql.database }}"
+    
+  # Backup configuration
+  backup:
+    enabled: true
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    bucket: "{{ values.app.shortName }}-db-backups"
+
+# ============================================================================
+# REDIS CACHE CONFIGURATION
+# ============================================================================
+redis:
+  enabled: true
+  name: "{{ values.app.fullName }}-redis"
+  port: 6379
+  
+  # Connection URL
+  url: "redis://{{ values.redis.name }}:{{ values.redis.port }}"
+  
+  # Configuration
+  config:
+    maxMemory: "256mb"
+    maxMemoryPolicy: "allkeys-lru"
+
+# ============================================================================
+# SECRETS AND CONFIGMAPS
+# ============================================================================
+secrets:
+  # Application secrets
+  app:
+    name: "{{ values.app.fullName }}-secrets"
+    data:
+      database-url: "{{ values.database.connection.url }}"
+      redis-url: "{{ values.redis.url }}"
+      
+  # TLS secrets
+  tls:
+    name: "{{ values.ingress.tls.secretName }}"
+    
+  # Registry pull secrets
+  registry:
+    name: "{{ values.app.fullName }}-registry-secret"
+
+configMaps:
+  app:
+    name: "{{ values.app.fullName }}-config"
+    data:
+      APP_NAME: "{{ values.app.name }}"
+      APP_VERSION: "{{ values.app.version }}"
+      APP_ENV: "{{ values.app.environment }}"
+      NAMESPACE: "{{ values.global.namespace }}"
+      CLUSTER: "{{ values.global.clusterName }}"
+
+# ============================================================================
+# RESOURCE LIMITS AND REQUESTS
+# ============================================================================
+resources:
+  frontend:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+      
+  api:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+      
+  worker:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# ============================================================================
+# AUTOSCALING CONFIGURATION
+# ============================================================================
+autoscaling:
+  frontend:
+    enabled: true
+    minReplicas: "{{ values.services.frontend.replicas }}"
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    name: "{{ values.services.frontend.fullName }}-hpa"
+    
+  api:
+    enabled: true
+    minReplicas: "{{ values.services.api.replicas }}"
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 80
+    name: "{{ values.services.api.fullName }}-hpa"
+
+# ============================================================================
+# MONITORING AND OBSERVABILITY
+# ============================================================================
+monitoring:
+  # ServiceMonitor for Prometheus
+  serviceMonitor:
+    enabled: true
+    name: "{{ values.app.fullName }}-monitor"
+    labels:
+      app: "{{ values.app.name }}"
+      environment: "{{ values.app.environment }}"
+      
+  # Grafana dashboard
+  dashboard:
+    enabled: true
+    name: "{{ values.app.fullName }}-dashboard"
+    
+  # Log aggregation
+  logging:
+    enabled: true
+    destination: "elasticsearch.logging.svc.cluster.local:9200"
+    index: "{{ values.app.name }}-{{ values.app.environment }}"
+
+# ============================================================================
+# NETWORK POLICIES
+# ============================================================================
+networkPolicies:
+  # Frontend network policy
+  frontend:
+    enabled: true
+    name: "{{ values.services.frontend.fullName }}-netpol"
+    
+  # API network policy
+  api:
+    enabled: true
+    name: "{{ values.services.api.fullName }}-netpol"
+    
+  # Database network policy
+  database:
+    enabled: true
+    name: "{{ values.app.fullName }}-db-netpol"
+
+# ============================================================================
+# SERVICE MESH (Istio)
+# ============================================================================
+serviceMesh:
+  istio:
+    enabled: false
+    
+    # Virtual services
+    virtualService:
+      name: "{{ values.app.fullName }}-vs"
+      gateway: "{{ values.app.fullName }}-gateway"
+      
+    # Destination rules
+    destinationRule:
+      name: "{{ values.app.fullName }}-dr"
+      
+    # Gateway
+    gateway:
+      name: "{{ values.app.fullName }}-gateway"
+      hosts:
+        - "{{ values.ingress.hosts.frontend }}"
+        - "{{ values.ingress.hosts.api }}"
+
+# ============================================================================
+# EXTERNAL REPLACEMENTS
+# ============================================================================
+replacements:
+  json:
+    # Helm chart values
+    "chart/values.json":
+      "$.global.imageRegistry": "{{ values.global.imageRegistry }}"
+      "$.global.imageTag": "{{ values.global.imageTag }}"
+      "$.app.name": "{{ values.app.name }}"
+      "$.app.fullName": "{{ values.app.fullName }}"
+      
+  markdown:
+    # Kubernetes documentation
+    "k8s/README.md":
+      "pattern: # Application: .*": "# Application: {{ values.app.name | title }}"
+      "pattern: Environment: .*": "Environment: {{ values.app.environment | title }}"
+      "pattern: Namespace: .*": "Namespace: {{ values.global.namespace }}"
+      "literal: [FRONTEND_URL]": "https://{{ values.ingress.hosts.frontend }}"
+      "literal: [API_URL]": "https://{{ values.ingress.hosts.api }}"

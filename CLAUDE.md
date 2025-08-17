@@ -20,7 +20,12 @@ customizer/
 │   │   ├── scanner.py         # File discovery and filtering
 │   │   ├── parser.py          # Comment marker extraction
 │   │   ├── processor.py       # Template rendering and file processing
-│   │   └── writer.py          # Safe file writing with backups
+│   │   ├── writer.py          # Safe file writing with backups
+│   │   ├── external_replacements.py  # External replacements configuration (v0.3.0+)
+│   │   └── replacers/         # External file type replacers (v0.3.0+)
+│   │       ├── __init__.py    # Replacer exports
+│   │       ├── json_replacer.py    # JSONPath-based JSON replacements
+│   │       └── markdown_replacer.py # Pattern-based Markdown replacements
 │   └── utils/
 │       ├── file_types.py      # File type detection and comment syntax
 │       └── validation.py      # Parameter and template validation
@@ -103,6 +108,16 @@ docker:
 api:
   base_url: "https://api.myapp.com"
   version: "v1"
+
+# External replacements for files without comment support (v0.3.0+)
+replacements:
+  json:
+    package.json:
+      '$.name': '{{ values.project.name }}'
+      '$.version': '{{ values.project.version }}'
+  markdown:
+    README.md:
+      'pattern: # .+': '# {{ values.project.name | title }}'
 ```
 
 ## Validation with Parent Project
@@ -117,6 +132,7 @@ Use the py-ang project as validation target by:
 - **pyyaml**: YAML configuration parsing
 - **click**: Modern CLI framework
 - **rich**: Beautiful terminal output
+- **jsonpath-ng**: JSONPath expressions for JSON replacements (v0.3.0+)
 - **pathlib**: File system operations (built-in)
 
 ## IDE Integration and Tools

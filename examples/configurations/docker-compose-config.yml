@@ -1,0 +1,286 @@
+# Template Customizer Configuration Example: Docker Compose
+# This example demonstrates self-referencing values for Docker Compose deployments
+
+# ============================================================================
+# PROJECT METADATA
+# ============================================================================
+project:
+  name: "blog-platform"
+  version: "1.4.2"
+  description: "Multi-tenant blog platform with CMS"
+  environment: "development"
+
+# Company and branding
+branding:
+  company: "BlogCorp"
+  domain: "blogcorp.dev"
+  support_email: "support@blogcorp.dev"
+
+# ============================================================================
+# COMPUTED VALUES
+# ============================================================================
+computed:
+  # Environment-specific naming
+  env_suffix: "{{ values.project.environment[:3] }}"  # "dev", "sta", "pro"
+  project_prefix: "{{ values.project.name }}-{{ values.computed.env_suffix }}"
+  
+  # Network names
+  network_name: "{{ values.computed.project_prefix }}-network"
+  
+  # Volume names
+  data_volume: "{{ values.computed.project_prefix }}-data"
+  uploads_volume: "{{ values.computed.project_prefix }}-uploads"
+  db_volume: "{{ values.computed.project_prefix }}-db"
+
+# ============================================================================
+# DOCKER REGISTRY AND IMAGES
+# ============================================================================
+docker:
+  registry: "ghcr.io/blogcorp"
+  
+  # Service images
+  images:
+    frontend: "{{ values.docker.registry }}/{{ values.project.name }}-frontend:{{ values.project.version }}"
+    api: "{{ values.docker.registry }}/{{ values.project.name }}-api:{{ values.project.version }}"
+    admin: "{{ values.docker.registry }}/{{ values.project.name }}-admin:{{ values.project.version }}"
+    worker: "{{ values.docker.registry }}/{{ values.project.name }}-worker:{{ values.project.version }}"
+    
+  # Third-party images
+  external:
+    postgres: "postgres:15-alpine"
+    redis: "redis:7-alpine"
+    nginx: "nginx:1.24-alpine"
+    elasticsearch: "elasticsearch:8.8.0"
+
+# ============================================================================
+# NETWORKING CONFIGURATION
+# ============================================================================
+networking:
+  # Port mappings
+  ports:
+    frontend: 3000
+    api: 8080
+    admin: 8090
+    nginx: 80
+    postgres: 5432
+    redis: 6379
+    elasticsearch: 9200
+    
+  # External URLs (for development)
+  urls:
+    frontend: "http://localhost:{{ values.networking.ports.nginx }}"
+    api: "http://localhost:{{ values.networking.ports.nginx }}/api"
+    admin: "http://localhost:{{ values.networking.ports.nginx }}/admin"
+
+# ============================================================================
+# DATABASE CONFIGURATION
+# ============================================================================
+database:
+  # PostgreSQL settings
+  postgres:
+    name: "{{ values.project.name | replace('-', '_') }}_{{ values.project.environment }}"
+    user: "bloguser"
+    password: "dev_password_123"
+    host: "{{ values.computed.project_prefix }}-postgres"
+    port: "{{ values.networking.ports.postgres }}"
+    
+  # Connection strings
+  connection:
+    main: "postgresql://{{ values.database.postgres.user }}:{{ values.database.postgres.password }}@{{ values.database.postgres.host }}:{{ values.database.postgres.port }}/{{ values.database.postgres.name }}"
+    
+  # Database URLs for different services
+  urls:
+    api: "{{ values.database.connection.main }}"
+    admin: "{{ values.database.connection.main }}"
+    worker: "{{ values.database.connection.main }}"
+
+# ============================================================================
+# CACHE AND SESSION STORAGE
+# ============================================================================
+cache:
+  redis:
+    host: "{{ values.computed.project_prefix }}-redis"
+    port: "{{ values.networking.ports.redis }}"
+    database: 0
+    
+  # Connection URLs
+  urls:
+    main: "redis://{{ values.cache.redis.host }}:{{ values.cache.redis.port }}/{{ values.cache.redis.database }}"
+    sessions: "redis://{{ values.cache.redis.host }}:{{ values.cache.redis.port }}/1"
+    cache: "redis://{{ values.cache.redis.host }}:{{ values.cache.redis.port }}/2"
+
+# ============================================================================
+# SEARCH CONFIGURATION
+# ============================================================================
+search:
+  elasticsearch:
+    host: "{{ values.computed.project_prefix }}-elasticsearch"
+    port: "{{ values.networking.ports.elasticsearch }}"
+    
+  # Connection URL
+  url: "http://{{ values.search.elasticsearch.host }}:{{ values.search.elasticsearch.port }}"
+  
+  # Index configuration
+  indices:
+    posts: "{{ values.project.name }}-posts-{{ values.project.environment }}"
+    users: "{{ values.project.name }}-users-{{ values.project.environment }}"
+
+# ============================================================================
+# SERVICE CONFIGURATION
+# ============================================================================
+services:
+  # Frontend application
+  frontend:
+    container_name: "{{ values.computed.project_prefix }}-frontend"
+    image: "{{ values.docker.images.frontend }}"
+    port: "{{ values.networking.ports.frontend }}"
+    
+  # API service
+  api:
+    container_name: "{{ values.computed.project_prefix }}-api"
+    image: "{{ values.docker.images.api }}"
+    port: "{{ values.networking.ports.api }}"
+    
+  # Admin interface
+  admin:
+    container_name: "{{ values.computed.project_prefix }}-admin"
+    image: "{{ values.docker.images.admin }}"
+    port: "{{ values.networking.ports.admin }}"
+    
+  # Background worker
+  worker:
+    container_name: "{{ values.computed.project_prefix }}-worker"
+    image: "{{ values.docker.images.worker }}"
+    
+  # Reverse proxy
+  nginx:
+    container_name: "{{ values.computed.project_prefix }}-nginx"
+    image: "{{ values.docker.external.nginx }}"
+    port: "{{ values.networking.ports.nginx }}"
+
+# ============================================================================
+# ENVIRONMENT VARIABLES
+# ============================================================================
+environment:
+  # Common environment variables
+  common:
+    APP_NAME: "{{ values.project.name }}"
+    APP_VERSION: "{{ values.project.version }}"
+    APP_ENV: "{{ values.project.environment }}"
+    COMPANY_NAME: "{{ values.branding.company }}"
+    SUPPORT_EMAIL: "{{ values.branding.support_email }}"
+    
+  # Database environment variables
+  database:
+    DATABASE_URL: "{{ values.database.connection.main }}"
+    DB_HOST: "{{ values.database.postgres.host }}"
+    DB_NAME: "{{ values.database.postgres.name }}"
+    DB_USER: "{{ values.database.postgres.user }}"
+    DB_PASSWORD: "{{ values.database.postgres.password }}"
+    
+  # Cache environment variables
+  cache:
+    REDIS_URL: "{{ values.cache.urls.main }}"
+    REDIS_SESSION_URL: "{{ values.cache.urls.sessions }}"
+    REDIS_CACHE_URL: "{{ values.cache.urls.cache }}"
+    
+  # Search environment variables
+  search:
+    ELASTICSEARCH_URL: "{{ values.search.url }}"
+    SEARCH_INDEX_POSTS: "{{ values.search.indices.posts }}"
+    SEARCH_INDEX_USERS: "{{ values.search.indices.users }}"
+    
+  # Service URLs
+  urls:
+    FRONTEND_URL: "{{ values.networking.urls.frontend }}"
+    API_URL: "{{ values.networking.urls.api }}"
+    ADMIN_URL: "{{ values.networking.urls.admin }}"
+
+# ============================================================================
+# STORAGE AND VOLUMES
+# ============================================================================
+storage:
+  # Volume mappings
+  volumes:
+    database: "{{ values.computed.db_volume }}"
+    uploads: "{{ values.computed.uploads_volume }}"
+    elasticsearch: "{{ values.computed.project_prefix }}-es-data"
+    nginx_config: "{{ values.computed.project_prefix }}-nginx-config"
+    
+  # Host paths (for development)
+  paths:
+    uploads: "./data/uploads"
+    config: "./config"
+    logs: "./logs"
+
+# ============================================================================
+# HEALTH CHECKS AND MONITORING
+# ============================================================================
+health:
+  # Health check endpoints
+  endpoints:
+    frontend: "{{ values.networking.urls.frontend }}/health"
+    api: "{{ values.networking.urls.api }}/health"
+    admin: "{{ values.networking.urls.admin }}/health"
+    
+  # Health check intervals
+  intervals:
+    interval: "30s"
+    timeout: "10s"
+    retries: 3
+    start_period: "40s"
+
+# ============================================================================
+# SECURITY CONFIGURATION
+# ============================================================================
+security:
+  # JWT configuration
+  jwt:
+    secret: "dev_jwt_secret_key_change_in_prod"
+    issuer: "{{ values.branding.company }}-{{ values.project.environment }}"
+    audience: "{{ values.project.name }}-users"
+    
+  # API keys
+  api_keys:
+    internal: "dev_internal_api_key"
+    webhook: "dev_webhook_secret"
+    
+  # CORS settings
+  cors:
+    origins:
+      - "{{ values.networking.urls.frontend }}"
+      - "{{ values.networking.urls.admin }}"
+
+# ============================================================================
+# EXTERNAL REPLACEMENTS
+# ============================================================================
+replacements:
+  json:
+    # Docker Compose file generation
+    "docker-compose.json":
+      "$.services.frontend.container_name": "{{ values.services.frontend.container_name }}"
+      "$.services.frontend.image": "{{ values.services.frontend.image }}"
+      "$.services.api.container_name": "{{ values.services.api.container_name }}"
+      "$.services.api.image": "{{ values.services.api.image }}"
+      "$.networks.default.name": "{{ values.computed.network_name }}"
+      
+    # Package.json for frontend
+    "frontend/package.json":
+      "$.name": "{{ values.project.name }}-frontend"
+      "$.version": "{{ values.project.version }}"
+      "$.description": "Frontend for {{ values.project.description }}"
+      
+  markdown:
+    # Development documentation
+    "README.md":
+      "pattern: # Project: .*": "# Project: {{ values.project.name | title | replace('-', ' ') }}"
+      "pattern: Version: .*": "Version: {{ values.project.version }}"
+      "pattern: Environment: .*": "Environment: {{ values.project.environment | title }}"
+      "literal: [FRONTEND_URL]": "{{ values.networking.urls.frontend }}"
+      "literal: [API_URL]": "{{ values.networking.urls.api }}"
+      "literal: [ADMIN_URL]": "{{ values.networking.urls.admin }}"
+      
+    # Docker documentation
+    "docs/DOCKER.md":
+      "pattern: Network name: .*": "Network name: {{ values.computed.network_name }}"
+      "pattern: Data volume: .*": "Data volume: {{ values.computed.data_volume }}"

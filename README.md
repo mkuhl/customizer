@@ -261,6 +261,138 @@ port = 5432
 registry = "ghcr.io"
 ```
 
+## Self-Referencing Configuration Values (New in v0.4.0)
+
+Template Customizer now supports **self-referencing** configuration values, allowing you to build complex configurations from simpler values and eliminate duplication:
+
+```yaml
+# config.yml
+project:
+  name: "my-microservice"
+  version: "1.2.0"
+  environment: "production"
+
+# Reference other values in the same configuration
+docker:
+  registry: "ghcr.io/mycompany"
+  image: "{{ values.docker.registry }}/{{ values.project.name }}:{{ values.project.version }}"
+  
+database:
+  name: "{{ values.project.name | replace('-', '_') }}_{{ values.project.environment }}"
+  host: "{{ values.project.name }}-{{ values.project.environment }}.cluster.amazonaws.com"
+  
+api:
+  base_url: "https://{{ values.project.name }}.{{ values.project.environment }}.mycompany.com"
+  health_check: "{{ values.api.base_url }}/health"
+
+monitoring:
+  namespace: "{{ values.project.name }}/{{ values.project.environment }}"
+```
+
+**After resolution, this becomes:**
+
+```yaml
+project:
+  name: "my-microservice"
+  version: "1.2.0"
+  environment: "production"
+
+docker:
+  registry: "ghcr.io/mycompany"
+  image: "ghcr.io/mycompany/my-microservice:1.2.0"
+  
+database:
+  name: "my_microservice_production"
+  host: "my-microservice-production.cluster.amazonaws.com"
+  
+api:
+  base_url: "https://my-microservice.production.mycompany.com"
+  health_check: "https://my-microservice.production.mycompany.com/health"
+
+monitoring:
+  namespace: "my-microservice/production"
+```
+
+### Key Features
+
+- **🔄 Reference Other Values**: Use `{{ values.path.to.value }}` syntax to reference any value in your configuration
+- **🔗 Chained References**: References can reference other references for complex compositions
+- **🛠️ Jinja2 Filters**: Apply filters like `{{ values.name | lower | replace('-', '_') }}`
+- **⚡ Smart Resolution**: Automatic dependency resolution regardless of definition order
+- **🛡️ Circular Detection**: Clear error messages for circular dependencies
+- **📊 Type Preservation**: Maintains original data types (strings, numbers, booleans, lists)
+
+### Advanced Examples
+
+**Microservices Configuration:**
+```yaml
+environment: "prod"
+region: "us-east-1"
+
+project:
+  name: "ecommerce"
+  version: "2.1.0"
+
+services:
+  api:
+    name: "{{ values.project.name }}-api"
+    image: "{{ values.docker.registry }}/{{ values.services.api.name }}:{{ values.project.version }}"
+    url: "https://{{ values.services.api.name }}.{{ values.environment }}.example.com"
+  
+  frontend:
+    name: "{{ values.project.name }}-web"
+    image: "{{ values.docker.registry }}/{{ values.services.frontend.name }}:{{ values.project.version }}"
+
+docker:
+  registry: "123456789012.dkr.ecr.{{ values.region }}.amazonaws.com"
+
+database:
+  host: "{{ values.project.name }}-{{ values.environment }}.cluster-xyz.{{ values.region }}.rds.amazonaws.com"
+```
+
+**Kubernetes/Helm Values Pattern:**
+```yaml
+global:
+  namespace: "my-app-prod"
+  imageTag: "v1.2.3"
+
+app:
+  name: "my-application"
+  fullName: "{{ values.global.namespace }}-{{ values.app.name }}"
+
+secrets:
+  name: "{{ values.app.fullName }}-secrets"
+  dockerRegistry: "{{ values.app.fullName }}-registry-secret"
+```
+
+### CLI Options
+
+Control reference resolution with CLI flags:
+
+```bash
+# Enable verbose mode to see resolution details
+customizer process --project ./template --config ./config.yml --verbose --dry-run
+
+# Disable reference resolution for compatibility
+customizer process --project ./template --config ./config.yml --no-resolve-refs --dry-run
+```
+
+### Error Handling
+
+Template Customizer provides clear error messages for configuration issues:
+
+```bash
+# Circular dependency detection
+❌ Circular dependency detected in configuration file 'config.yml':
+   Circular dependency detected: a → b → c → a
+   Please check your configuration for references that form a loop.
+
+# Missing reference detection  
+❌ Reference resolution failed in configuration file 'config.yml':
+   Reference 'values.missing.value' not found
+   Please ensure all referenced values exist in your configuration.
+```
+
 ## External Replacements (New in v0.3.0)
 
 For files that don't support comments (like JSON) or when you prefer external configuration, Template Customizer supports external replacement definitions in your config file.

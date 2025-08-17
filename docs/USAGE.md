@@ -141,6 +141,325 @@ features:
   metrics: true
 ```
 
+## Self-Referencing Configuration Values (New in v0.4.0)
+
+Template Customizer now supports **self-referencing** values within your configuration files, allowing you to build complex configurations from simpler values and eliminate duplication.
+
+### Basic Self-References
+
+Reference other values in your configuration using the same `{{ values.path }}` syntax:
+
+```yaml
+# config.yml
+project:
+  name: "my-microservice"
+  version: "1.2.0"
+  environment: "production"
+
+# These values reference other values in the same configuration
+docker:
+  registry: "ghcr.io/mycompany"
+  image: "{{ values.docker.registry }}/{{ values.project.name }}:{{ values.project.version }}"
+
+database:
+  name: "{{ values.project.name | replace('-', '_') }}_{{ values.project.environment }}"
+  host: "{{ values.project.name }}-{{ values.project.environment }}.cluster.amazonaws.com"
+```
+
+### Advanced Examples
+
+#### Microservices Configuration
+
+Perfect for complex deployments where values need to be consistent across services:
+
+```yaml
+# config.yml
+environment: "production"
+region: "us-east-1"
+company: "acme"
+
+project:
+  name: "ecommerce-platform"
+  version: "2.1.0"
+
+# AWS Infrastructure
+aws:
+  account_id: "123456789012"
+  ecr_registry: "{{ values.aws.account_id }}.dkr.ecr.{{ values.region }}.amazonaws.com"
+
+# Service definitions
+services:
+  api:
+    name: "{{ values.project.name }}-api"
+    port: 8080
+    image: "{{ values.aws.ecr_registry }}/{{ values.services.api.name }}:{{ values.project.version }}"
+    url: "https://{{ values.services.api.name }}.{{ values.environment }}.{{ values.company }}.com"
+  
+  frontend:
+    name: "{{ values.project.name }}-web"
+    port: 3000
+    image: "{{ values.aws.ecr_registry }}/{{ values.services.frontend.name }}:{{ values.project.version }}"
+    url: "https://{{ values.services.frontend.name }}.{{ values.environment }}.{{ values.company }}.com"
+
+# Database configuration
+database:
+  host: "{{ values.project.name }}-{{ values.environment }}.cluster-xyz.{{ values.region }}.rds.amazonaws.com"
+  name: "{{ values.project.name | replace('-', '_') }}_{{ values.environment }}"
+  url: "postgresql://user:pass@{{ values.database.host }}/{{ values.database.name }}"
+
+# Monitoring and logging
+monitoring:
+  namespace: "{{ values.project.name }}/{{ values.environment }}"
+  alerts:
+    api_health: "{{ values.services.api.url }}/health"
+    frontend_health: "{{ values.services.frontend.url }}/health"
+```
+
+#### Kubernetes/Helm Values Pattern
+
+Common pattern for Kubernetes deployments:
+
+```yaml
+# values.yml (Helm-style configuration)
+global:
+  imageRegistry: "registry.acme.com"
+  imageTag: "v1.2.3"
+  namespace: "my-app-prod"
+
+app:
+  name: "my-application"
+  fullName: "{{ values.global.namespace }}-{{ values.app.name }}"
+  labels:
+    app: "{{ values.app.name }}"
+    version: "{{ values.global.imageTag }}"
+
+images:
+  api: "{{ values.global.imageRegistry }}/{{ values.app.name }}-api:{{ values.global.imageTag }}"
+  worker: "{{ values.global.imageRegistry }}/{{ values.app.name }}-worker:{{ values.global.imageTag }}"
+  nginx: "{{ values.global.imageRegistry }}/nginx:stable"
+
+ingress:
+  enabled: true
+  host: "{{ values.app.name }}.acme.com"
+
+secrets:
+  name: "{{ values.app.fullName }}-secrets"
+  dockerRegistry: "{{ values.app.fullName }}-registry-secret"
+
+configMaps:
+  name: "{{ values.app.fullName }}-config"
+```
+
+### Resolution Features
+
+#### Order Independence
+
+References work regardless of definition order:
+
+```yaml
+# This works even though 'frontend.url' is defined before 'frontend.name'
+frontend:
+  url: "https://{{ values.frontend.name }}.example.com"
+  name: "my-frontend"
+
+# Also works with deeply nested references
+database:
+  connection_string: "postgresql://{{ values.database.credentials.username }}:{{ values.database.credentials.password }}@{{ values.database.host }}/{{ values.database.name }}"
+  host: "{{ values.project.name }}-db.cluster.amazonaws.com"
+  name: "{{ values.project.name | replace('-', '_') }}"
+  credentials:
+    username: "app_user"
+    password: "secure_password"
+
+project:
+  name: "my-app"
+```
+
+#### Chained References
+
+References can reference other references:
+
+```yaml
+base:
+  domain: "example.com"
+  
+api:
+  subdomain: "api"
+  host: "{{ values.api.subdomain }}.{{ values.base.domain }}"
+  
+frontend:
+  subdomain: "app"
+  host: "{{ values.frontend.subdomain }}.{{ values.base.domain }}"
+  api_endpoint: "https://{{ values.api.host }}/v1"
+  
+monitoring:
+  healthcheck_urls:
+    - "{{ values.frontend.api_endpoint }}/health"
+    - "https://{{ values.frontend.host }}/health"
+```
+
+#### Type Preservation
+
+Non-string types are preserved in pure references:
+
+```yaml
+settings:
+  port: 3000              # integer
+  debug: true             # boolean
+  features: ["auth", "api"] # array
+
+server:
+  port: "{{ values.settings.port }}"        # Remains integer: 3000
+  debug_mode: "{{ values.settings.debug }}" # Remains boolean: true
+  enabled_features: "{{ values.settings.features }}" # Remains array
+
+# String interpolation converts to strings
+connection:
+  url: "http://localhost:{{ values.settings.port }}"  # String: "http://localhost:3000"
+```
+
+### CLI Usage
+
+#### Verbose Mode
+
+See detailed resolution information:
+
+```bash
+customizer process --project ./template --config ./config.yml --verbose --dry-run
+```
+
+Output:
+```
+🔄 Resolving self-references in configuration...
+  📊 Built dependency graph with 12 nodes
+     services.api.image depends on: aws.ecr_registry, services.api.name, project.version
+     services.api.name depends on: project.name
+     aws.ecr_registry depends on: aws.account_id, region
+  📋 Resolution order: project.name → region → aws.account_id → aws.ecr_registry → services.api.name → services.api.image
+  ✅ Resolution completed in 2 iteration(s)
+✅ Successfully resolved configuration references
+```
+
+#### Disable Resolution
+
+For compatibility or debugging:
+
+```bash
+customizer process --project ./template --config ./config.yml --no-resolve-refs --dry-run
+```
+
+### Error Handling
+
+Template Customizer provides clear error messages for configuration issues:
+
+#### Circular Dependencies
+
+```yaml
+# This will cause an error:
+a: "{{ values.b }}"
+b: "{{ values.c }}"
+c: "{{ values.a }}"
+```
+
+Error message:
+```
+❌ Circular dependency detected in configuration file 'config.yml':
+   Circular dependency detected: a → b → c → a
+   Please check your configuration for references that form a loop.
+```
+
+#### Missing References
+
+```yaml
+project:
+  name: "myapp"
+api:
+  url: "{{ values.database.host }}"  # database.host doesn't exist
+```
+
+Error message:
+```
+❌ Reference resolution failed in configuration file 'config.yml':
+   Reference 'values.database.host' not found
+   Please ensure all referenced values exist in your configuration.
+```
+
+#### Template Syntax Errors
+
+```yaml
+project:
+  name: "myapp"
+api:
+  url: "{{ values.project.name | invalid_filter }}"  # invalid filter
+```
+
+Error message:
+```
+❌ Template syntax error in configuration file 'config.yml':
+   Invalid template syntax: No filter named 'invalid_filter'
+   Please check your Jinja2 template syntax.
+```
+
+### Best Practices
+
+#### 1. Use Descriptive Base Values
+
+```yaml
+# Good: Clear base values
+project:
+  name: "ecommerce"
+  environment: "production"
+  region: "us-east-1"
+
+# Then build complex values
+database:
+  host: "{{ values.project.name }}-{{ values.project.environment }}.{{ values.project.region }}.rds.amazonaws.com"
+```
+
+#### 2. Group Related References
+
+```yaml
+# Group infrastructure settings
+infrastructure:
+  vpc_id: "vpc-12345"
+  subnet_prefix: "10.0"
+  availability_zones: ["us-east-1a", "us-east-1b"]
+
+# Use them in related services
+services:
+  database:
+    subnet_group: "{{ values.infrastructure.vpc_id }}-db-subnet-group"
+    security_group: "{{ values.infrastructure.vpc_id }}-db-sg"
+```
+
+#### 3. Use Filters for Transformations
+
+```yaml
+project:
+  name: "My-Awesome-App"
+
+# Use filters to transform values appropriately
+docker:
+  image_name: "{{ values.project.name | lower | replace(' ', '-') | replace('_', '-') }}"
+  # Results in: "my-awesome-app"
+
+database:
+  name: "{{ values.project.name | lower | replace('-', '_') | replace(' ', '_') }}"
+  # Results in: "my_awesome_app"
+```
+
+#### 4. Validate Your Configuration
+
+Always test your configuration with dry-run mode:
+
+```bash
+# Test resolution and template processing
+customizer process --config config.yml --dry-run --verbose
+
+# Test just the reference resolution
+customizer process --config config.yml --no-resolve-refs --dry-run
+```
+
 ## Next Steps
 
 Ready to continue with **Phase 2: Comment Parser Engine** to enhance:

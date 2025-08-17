@@ -49,6 +49,22 @@ def main(ctx, project, config):
     A tool for customizing project templates while keeping them fully functional.
     Uses comment markers like '# variable = {{ expression }}' to identify
     customization points in source code.
+
+    NEW in v0.4.0: Self-referencing configuration values let you build complex
+    configurations from simpler values using {{ values.path.to.value }} syntax.
+
+    Examples:
+      # Basic usage
+      customizer process --project ./template --config ./config.yml --dry-run
+
+      # Self-referencing config example:
+      project:
+        name: "my-app"
+        version: "1.0.0"
+      docker:
+        image: "{{ values.project.name }}:{{ values.project.version }}"
+
+    See 'customizer process --help' for detailed usage information.
     """
     # Store global options in context
     ctx.ensure_object(dict)
@@ -93,6 +109,11 @@ def main(ctx, project, config):
     is_flag=True,
     help="Automatically apply changes without confirmation prompt",
 )
+@click.option(
+    "--no-resolve-refs",
+    is_flag=True,
+    help="Disable resolution of self-references in configuration files",
+)
 @click.pass_context
 def process(
     ctx,
@@ -104,6 +125,7 @@ def process(
     dry_run: bool,
     verbose: bool,
     yes: bool,
+    no_resolve_refs: bool,
 ):
     """Process template markers in project files.
 
@@ -111,8 +133,54 @@ def process(
     markers in comments and replaces the following lines with rendered values
     from the configuration file.
 
-    Example:
-        template-customizer process -p ./my-template -c ./config.yml --dry-run
+    Template markers use comment syntax: # variable = {{ values.expression }}
+
+    NEW in v0.4.0: Self-referencing configuration values allow building complex
+    configurations from simpler values.
+
+    Examples:
+
+    \b
+    # Basic processing
+    customizer process --project ./template --config ./config.yml --dry-run
+
+    \b
+    # Apply changes without confirmation
+    customizer process --project ./template --config ./config.yml --yes
+
+    \b
+    # Verbose mode with self-reference resolution details
+    customizer process --project ./template --config ./config.yml --verbose --dry-run
+
+    \b
+    # Disable self-reference resolution (compatibility mode)
+    customizer process --project ./template --config ./config.yml --no-resolve-refs
+
+    \b
+    # Filter specific file types
+    customizer process --include "*.py,*.js,*.yml" --exclude "*test*" --dry-run
+
+    \b
+    # Self-referencing configuration example:
+    # config.yml:
+    project:
+      name: "my-microservice"
+      version: "1.2.0"
+      environment: "production"
+    docker:
+      registry: "ghcr.io/company"
+      image: "{{ values.docker.registry }}/{{ values.project.name }}:v1.0"
+    database:
+      name: "{{ values.project.name | replace('-', '_') }}_db"
+      host: "{{ values.project.name }}-cluster.amazonaws.com"
+
+    \b
+    # Template file example (app.py):
+    # app_name = {{ values.project.name | quote }}
+    app_name = "default-app"
+
+    # docker_image = {{ values.docker.image | quote }}
+    docker_image = "default:latest"
     """
     try:
         # Use global options if local ones aren't provided
@@ -162,7 +230,9 @@ def process(
         if verbose:
             console.print(f"[blue]Loading configuration from {config}...[/blue]")
 
-        param_loader = ParameterLoader(config)
+        param_loader = ParameterLoader(
+            config, resolve_references=not no_resolve_refs, verbose=verbose
+        )
         try:
             parameters = param_loader.load()
         except Exception as e:
@@ -664,6 +734,52 @@ def info(ctx):
         )
         console.print(f"[green]Syntax:[/green] {syntax_info.get('example', 'N/A')}")
         console.print(f"[cyan]Extensions:[/cyan] {', '.join(sorted(extensions))}")
+
+    # Add information about self-referencing configuration values
+    console.print(
+        Panel(
+            "[bold green]NEW in v0.4.0:[/bold green] Self-Referencing Values\n\n"
+            "Build complex configurations from simpler values using references:\n\n"
+            "[blue]Example:[/blue]\n"
+            "project:\n"
+            '  name: "my-app"\n'
+            '  version: "1.0.0"\n'
+            "docker:\n"
+            '  registry: "ghcr.io/company"\n'
+            '  image: "{{ values.docker.registry }}/{{ values.project.name }}:v1.0"\n\n'
+            "[green]Features:[/green]\n"
+            "• Reference any value: {{ values.path.to.value }}\n"
+            "• Chain references: {{ values.computed.base_url }}/api\n"
+            "• Use Jinja2 filters: {{ values.name | lower | replace('-', '_') }}\n"
+            "• Type preservation for pure references\n"
+            "• Circular dependency detection\n"
+            "• Order-independent resolution",
+            title="🔗 Self-Referencing Values",
+            border_style="cyan",
+        )
+    )
+
+    # Add external replacements information
+    console.print(
+        Panel(
+            "[bold green]External Replacements:[/bold green] JSON & Markdown\n\n"
+            "For files that don't support comments, define replacements:\n\n"
+            "[blue]JSON Example:[/blue]\n"
+            "replacements:\n"
+            "  json:\n"
+            '    "package.json":\n'
+            '      "$.name": "{{ values.project.name }}"\n'
+            '      "$.version": "{{ values.project.version }}"\n\n'
+            "[blue]Markdown Example:[/blue]\n"
+            "replacements:\n"
+            "  markdown:\n"
+            '    "README.md":\n'
+            '      "pattern: # Old Title": "# {{ values.project.name | title }}"\n'
+            '      "literal: [PLACEHOLDER]": "{{ values.project.description }}"',
+            title="📄 External Replacements",
+            border_style="magenta",
+        )
+    )
 
 
 @main.command()

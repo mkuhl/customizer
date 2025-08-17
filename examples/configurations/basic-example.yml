@@ -1,0 +1,119 @@
+# Template Customizer Configuration Example: Basic Self-Referencing
+# This is a simple example to get started with self-referencing YAML values
+
+# ============================================================================
+# BASIC PROJECT INFORMATION
+# ============================================================================
+project:
+  name: "my-awesome-app"
+  version: "1.0.0"
+  description: "A simple web application"
+
+# ============================================================================
+# SIMPLE REFERENCES
+# ============================================================================
+# These values reference the project information above
+app:
+  # This will become: "my-awesome-app:1.0.0"
+  full_name: "{{ values.project.name }}:{{ values.project.version }}"
+  
+  # This will become: "A simple web application v1.0.0"
+  display_title: "{{ values.project.description }} v{{ values.project.version }}"
+
+# ============================================================================
+# DOCKER CONFIGURATION
+# ============================================================================
+docker:
+  registry: "ghcr.io/mycompany"
+  
+  # This will become: "ghcr.io/mycompany/my-awesome-app:1.0.0"
+  image: "{{ values.docker.registry }}/{{ values.project.name }}:{{ values.project.version }}"
+
+# ============================================================================
+# DATABASE SETTINGS
+# ============================================================================
+database:
+  # This will become: "my_awesome_app_database" (hyphens replaced with underscores)
+  name: "{{ values.project.name | replace('-', '_') }}_database"
+  
+  host: "localhost"
+  port: 5432
+  
+  # This will become: "postgresql://user:pass@localhost:5432/my_awesome_app_database"
+  url: "postgresql://user:pass@{{ values.database.host }}:{{ values.database.port }}/{{ values.database.name }}"
+
+# ============================================================================
+# API CONFIGURATION
+# ============================================================================
+api:
+  base_url: "https://api.mycompany.com"
+  
+  # This will become: "https://api.mycompany.com/my-awesome-app"
+  app_endpoint: "{{ values.api.base_url }}/{{ values.project.name }}"
+  
+  # This will become: "https://api.mycompany.com/my-awesome-app/health"
+  health_check: "{{ values.api.app_endpoint }}/health"
+
+# ============================================================================
+# USING JINJA2 FILTERS
+# ============================================================================
+computed:
+  # Convert to uppercase: "MY-AWESOME-APP"
+  app_name_upper: "{{ values.project.name | upper }}"
+  
+  # Convert to lowercase and replace hyphens: "my_awesome_app"
+  app_name_snake: "{{ values.project.name | lower | replace('-', '_') }}"
+  
+  # Create a title: "My Awesome App"
+  app_name_title: "{{ values.project.name | replace('-', ' ') | title }}"
+
+# ============================================================================
+# CHAINED REFERENCES
+# ============================================================================
+# These values reference other computed values
+deployment:
+  # This uses the computed snake_case name: "my_awesome_app_deployment"
+  name: "{{ values.computed.app_name_snake }}_deployment"
+  
+  # This references the docker image: "ghcr.io/mycompany/my-awesome-app:1.0.0"
+  image: "{{ values.docker.image }}"
+  
+  # This references the health check URL
+  health_endpoint: "{{ values.api.health_check }}"
+
+# ============================================================================
+# TYPE PRESERVATION EXAMPLES
+# ============================================================================
+settings:
+  port: 3000              # This is a number
+  debug: true             # This is a boolean
+  features: ["auth", "api"] # This is an array
+
+server:
+  # Pure reference - type preserved (remains integer: 3000)
+  port: "{{ values.settings.port }}"
+  
+  # Pure reference - type preserved (remains boolean: true)
+  debug_mode: "{{ values.settings.debug }}"
+  
+  # String interpolation - becomes string: "Server running on port 3000"
+  status_message: "Server running on port {{ values.settings.port }}"
+
+# ============================================================================
+# EXTERNAL REPLACEMENTS
+# ============================================================================
+# For files that don't support comment markers
+replacements:
+  json:
+    # Update package.json
+    "package.json":
+      "$.name": "{{ values.project.name }}"
+      "$.version": "{{ values.project.version }}"
+      "$.description": "{{ values.project.description }}"
+      
+  markdown:
+    # Update README.md
+    "README.md":
+      "pattern: # Project Name": "# {{ values.computed.app_name_title }}"
+      "pattern: Version: .*": "Version: {{ values.project.version }}"
+      "literal: [DESCRIPTION]": "{{ values.project.description }}"
